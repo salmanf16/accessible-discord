@@ -77,6 +77,21 @@ def copy_to_installed():
         except Exception as e:
             print(f"Error: Could not create directory {INSTALL_DIR}: {e}")
             return False
+    else:
+        # Purge stale files in INSTALL_DIR/globalPlugins that shouldn't be there
+        gp_dir = os.path.join(INSTALL_DIR, "globalPlugins")
+        if os.path.exists(gp_dir):
+            for item in os.listdir(gp_dir):
+                if item in ("_accessibleDiscord_server.py", "_accessibleDiscord_settings.py", "accessible_discord.py", "accessible_discord"):
+                    path = os.path.join(gp_dir, item)
+                    try:
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
+                        else:
+                            os.remove(path)
+                        print(f"Purged stale file/folder: {item}")
+                    except Exception as e:
+                        print(f"Warning: Failed to purge stale item {item}: {e}")
 
     copied_count = 0
     for root, dirs, files in os.walk(SRC_DIR):
