@@ -70,34 +70,6 @@ module.exports = class AccessibleDiscord {
         this.lastVoiceStates.clear();
         this.lastStreamViewers.clear();
 
-        // Debug: dump ApplicationStreamingStore keys to NVDA log
-        try {
-            const store = this.getStore("ApplicationStreamingStore");
-            if (store) {
-                let keys = [];
-                let obj = store;
-                while (obj) {
-                    keys = keys.concat(Object.getOwnPropertyNames(obj));
-                    obj = Object.getPrototypeOf(obj);
-                }
-                let uniqueKeys = [...new Set(keys)].filter(k => typeof store[k] === "function" || store[k] !== undefined);
-                this.sendEvent({
-                    type: "debug_log",
-                    message: `ApplicationStreamingStore keys: ${uniqueKeys.join(", ")}`
-                });
-            } else {
-                this.sendEvent({
-                    type: "debug_log",
-                    message: "ApplicationStreamingStore store not found"
-                });
-            }
-        } catch (e) {
-            this.sendEvent({
-                type: "debug_log",
-                message: `Error dumping store: ${e.message}`
-            });
-        }
-
         try {
             const VoiceStateStore = this.getStore("VoiceStateStore");
             if (VoiceStateStore) {
@@ -134,37 +106,6 @@ module.exports = class AccessibleDiscord {
             dispatcher.subscribe("STREAM_DELETE", this.handleStreamEvent);
             dispatcher.subscribe("STREAM_WATCH", this.handleStreamEvent);
             dispatcher.subscribe("STREAM_UPDATE", this.handleStreamEvent);
-
-            try {
-                const origDispatch = dispatcher.dispatch;
-                const origDirtyDispatch = dispatcher.dirtyDispatch;
-                const logAction = (action) => {
-                    if (action && action.type) {
-                        const type = action.type;
-                        if (type.includes("VOICE") || type.includes("MESSAGE") || type.includes("CHANNEL") || type.includes("MUTE") || type.includes("STREAM") || type.includes("WATCH")) {
-                            console.log("[AccessibleDiscord] Intercepted dispatcher action:", type, JSON.stringify(action));
-                        }
-                    }
-                };
-                if (origDispatch && !origDispatch.__accessibleDiscordHooked) {
-                    dispatcher.dispatch = function(action) {
-                        logAction(action);
-                        return origDispatch.apply(this, arguments);
-                    };
-                    dispatcher.dispatch.__accessibleDiscordHooked = true;
-                    this._origDispatch = origDispatch;
-                }
-                if (origDirtyDispatch && !origDirtyDispatch.__accessibleDiscordHooked) {
-                    dispatcher.dirtyDispatch = function(action) {
-                        logAction(action);
-                        return origDirtyDispatch.apply(this, arguments);
-                    };
-                    dispatcher.dirtyDispatch.__accessibleDiscordHooked = true;
-                    this._origDirtyDispatch = origDirtyDispatch;
-                }
-            } catch (err) {
-                console.error("[AccessibleDiscord] Error hooking dispatcher:", err);
-            }
             console.log("[AccessibleDiscord] Subscribed to Discord events successfully.");
         } else {
             console.error("[AccessibleDiscord] Could not subscribe: Dispatcher not found.");
@@ -188,13 +129,6 @@ module.exports = class AccessibleDiscord {
                 dispatcher.unsubscribe("STREAM_WATCH", this.handleStreamEvent);
                 dispatcher.unsubscribe("STREAM_UPDATE", this.handleStreamEvent);
             }
-
-            if (this._origDispatch) {
-                dispatcher.dispatch = this._origDispatch;
-            }
-            if (this._origDirtyDispatch) {
-                dispatcher.dirtyDispatch = this._origDirtyDispatch;
-            }
         }
         this.lastVoiceStates.clear();
         this.lastStreamViewers.clear();
@@ -205,80 +139,7 @@ module.exports = class AccessibleDiscord {
         this.checkStreamViewers();
     }
 
-    getStreamTargetFromMeta(meta, userId) {
-        // 1. Direct names
-        const name = meta.sourceName || meta.applicationName || meta.name;
-        if (name) return name;
 
-        // 2. game object structure
-        if (meta.game && meta.game.name) return meta.game.name;
-        if (meta.game && typeof meta.game === "string") return meta.game;
-
-        // 3. Resolve by application ID via ApplicationStore
-        if (meta.id) {
-            const ApplicationStore = this.getStore("ApplicationStore");
-            if (ApplicationStore) {
-                const app = ApplicationStore.getApplication(meta.id);
-                if (app && app.name) return app.name;
-            }
-        }
-
-        // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
-        if (meta.id) {
-            const PresenceStore = this.getStore("PresenceStore");
-            if (PresenceStore) {
-                const activities = PresenceStore.getActivities(userId) || [];
-                for (const act of activities) {
-                    if (act && act.applicationId === meta.id && act.name) {
-                        return act.name;
-                    }
-                }
-            }
-        }
-
-        return "";
-    }
-
-    announceStreamStart(userId, userName, attempt = 1) {
-        try {
-            const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
-            if (ApplicationStreamingStore) {
-                let props = {};
-                for (let prop in ApplicationStreamingStore) {
-                    if (typeof ApplicationStreamingStore[prop] !== "function") {
-                        try {
-                            props[prop] = ApplicationStreamingStore[prop];
-                        } catch (e) {
-                            props[prop] = `error: ${e.message}`;
-                        }
-                    }
-                }
-                this.sendEvent({
-                    type: "debug_log",
-                    message: `attempt ${attempt} for ${userName}: properties: ${JSON.stringify(props)}`
-                });
-            }
-        } catch (e) {
-            this.sendEvent({
-                type: "debug_log",
-                message: `Error in debug logging properties: ${e.message}`
-            });
-        }
-
-        if (attempt < 4) {
-            setTimeout(() => {
-                this.announceStreamStart(userId, userName, attempt + 1);
-            }, 500);
-        } else {
-            // After 4 attempts (2 seconds total), announce without a game name if still not found
-            this.sendEvent({
-                type: "stream_status",
-                user: userName,
-                state: "started",
-                target: ""
-            });
-        }
-    }
 
     checkStreamViewers() {
         try {
@@ -405,7 +266,12 @@ module.exports = class AccessibleDiscord {
             const oldStream = oldState ? (oldState.selfStream || false) : false;
             const newStream = event.selfStream || false;
             if (newStream) {
-                this.announceStreamStart(event.userId, userName);
+                this.sendEvent({
+                    type: "stream_status",
+                    user: userName,
+                    state: "started",
+                    target: ""
+                });
             }
         }
         else if (oldState !== undefined && oldState.channelId === myChannelId && event.channelId !== myChannelId) {
@@ -450,7 +316,12 @@ module.exports = class AccessibleDiscord {
             const newStream = event.selfStream || false;
             if (oldStream !== newStream) {
                 if (newStream) {
-                    this.announceStreamStart(event.userId, userName);
+                    this.sendEvent({
+                        type: "stream_status",
+                        user: userName,
+                        state: "started",
+                        target: ""
+                    });
                 } else {
                     this.sendEvent({
                         type: "stream_status",

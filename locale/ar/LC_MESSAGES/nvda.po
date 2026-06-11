@@ -74,54 +74,9 @@ msgstr "فشل تحميل BetterDiscord: {error}"
 msgid "Install BetterDiscord"
 msgstr "تثبيت BetterDiscord"
 
-msgid "New message from {user}: {content}"
-msgstr "رسالة جديدة من {user}: {content}"
-
-msgid "deafened"
-msgstr "عطل السمع"
-
-msgid "muted"
-msgstr "كتم الصوت"
-
-msgid "undeafened"
-msgstr "فعل السمع"
-
-msgid "unmuted"
-msgstr "ألغى كتم الصوت"
-
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} دقيقة و {seconds} ثانية"
 
 msgid "{seconds} sec"
 msgstr "{seconds} ثانية"
-
-msgid "{user} joined"
-msgstr "{user} انضم للقناة"
-
-msgid "{user} joined voice channel {channel}"
-msgstr "{user} انضم إلى القناة الصوتية {channel}"
-
-msgid "{user} joined your stream"
-msgstr "{user} انضم إلى بثك"
-
-msgid "{user} left"
-msgstr "{user} غادر القناة"
-
-msgid "{user} left voice channel {channel}"
-msgstr "{user} غادر القناة الصوتية {channel}"
-
-msgid "{user} left your stream"
-msgstr "{user} غادر بثك"
-
-msgid "{user} started streaming"
-msgstr "{user} بدأ بثاً"
-
-msgid "{user} started streaming {target}"
-msgstr "{user} بدأ بثاً لـ {target}"
-
-msgid "{user} stopped streaming"
-msgstr "{user} أوقف البث"
-
-msgid "{user} {state}"
-msgstr "{user} {state}"
 

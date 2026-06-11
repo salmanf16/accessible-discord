@@ -49,21 +49,7 @@ AR_DICT = {
     "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window.": "تم تحميل مثبت BetterDiscord بنجاح وفتحه. يرجى إكمال التثبيت من النافذة المفتوحة.",
     "Failed to download BetterDiscord: {error}": "فشل تحميل BetterDiscord: {error}",
     "Download failed, retry": "فشل التحميل، اضغط لإعادة المحاولة",
-    "{user} joined voice channel {channel}": "{user} انضم إلى القناة الصوتية {channel}",
-    "{user} joined": "{user} انضم للقناة",
-    "{user} left voice channel {channel}": "{user} غادر القناة الصوتية {channel}",
-    "{user} left": "{user} غادر القناة",
-    "muted": "كتم الصوت",
-    "unmuted": "ألغى كتم الصوت",
-    "{user} {state}": "{user} {state}",
-    "deafened": "عطل السمع",
-    "undeafened": "فعل السمع",
-    "{user} started streaming {target}": "{user} بدأ بثاً لـ {target}",
-    "{user} started streaming": "{user} بدأ بثاً",
-    "{user} stopped streaming": "{user} أوقف البث",
-    "{user} joined your stream": "{user} انضم إلى بثك",
-    "{user} left your stream": "{user} غادر بثك",
-    "New message from {user}: {content}": "رسالة جديدة من {user}: {content}",
+
     "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "تم تثبيت ملحق ديسكورد المساعد تلقائياً بنجاح. يرجى تفعيله من إعدادات ديسكورد."
 }
 
@@ -89,21 +75,7 @@ FR_DICT = {
     "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window.": "L'installateur BetterDiscord a été téléchargé et ouvert avec succès. Veuillez terminer l'installation dans la fenêtre ouverte.",
     "Failed to download BetterDiscord: {error}": "Échec du téléchargement de BetterDiscord : {error}",
     "Download failed, retry": "Le téléchargement a échoué, réessayez",
-    "{user} joined voice channel {channel}": "{user} a rejoint le salon vocal {channel}",
-    "{user} joined": "{user} a rejoint",
-    "{user} left voice channel {channel}": "{user} a quitté le salon vocal {channel}",
-    "{user} left": "{user} a quitté",
-    "muted": "muet",
-    "unmuted": "non muet",
-    "{user} {state}": "{user} {state}",
-    "deafened": "sourdine",
-    "undeafened": "sourdine désactivée",
-    "{user} started streaming {target}": "{user} a commencé à diffuser {target}",
-    "{user} started streaming": "{user} a commencé à diffuser",
-    "{user} stopped streaming": "{user} a arrêté de diffuser",
-    "{user} joined your stream": "{user} a rejoint votre diffusion",
-    "{user} left your stream": "{user} a quitté votre diffusion",
-    "New message from {user}: {content}": "Nouveau message de {user} : {content}",
+
     "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "L'extension compagnon BetterDiscord a été copiée automatiquement. Veuillez l'activer dans les paramètres de Discord."
 }
 

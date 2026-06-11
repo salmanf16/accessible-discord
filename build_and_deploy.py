@@ -165,6 +165,14 @@ def package_addon():
 if __name__ == "__main__":
     print("--- NVDA Accessible Discord Addon Deploy & Package ---")
     
+    # Sync root plugin with globalPlugins plugin folder
+    try:
+        shutil.copy2(os.path.join(SRC_DIR, "AccessibleDiscord.plugin.js"),
+                     os.path.join(SRC_DIR, "globalPlugins", "AccessibleDiscord.plugin.js"))
+        print("Synchronized root AccessibleDiscord.plugin.js to globalPlugins folder.")
+    except Exception as e:
+        print(f"Warning: Failed to sync plugin files: {e}")
+
     # Run translation pipeline
     try:
         from translate_all_locales import clean_and_translate_locales

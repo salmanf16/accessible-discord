@@ -84,11 +84,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
         dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
         if os.path.exists(src_file):
-            try:
-                shutil.copy2(src_file, dest_file)
-                return True
-            except Exception:
-                pass
+            should_copy = False
+            if not os.path.exists(dest_file):
+                should_copy = True
+            else:
+                try:
+                    if os.path.getsize(src_file) != os.path.getsize(dest_file):
+                        should_copy = True
+                except Exception:
+                    should_copy = True
+            if should_copy:
+                try:
+                    shutil.copy2(src_file, dest_file)
+                    return True
+                except Exception:
+                    pass
         return False
 
     def monitor_and_deploy_bd(self):
@@ -98,18 +108,29 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             return
         bd_plugins_dir = os.path.join(appdata, "BetterDiscord", "plugins")
         dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
-        if os.path.exists(dest_file):
-            return
+        plugin_dir = os.path.dirname(__file__)
+        src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
+        if os.path.exists(dest_file) and os.path.exists(src_file):
+            try:
+                if os.path.getsize(src_file) == os.path.getsize(dest_file):
+                    return
+            except Exception:
+                pass
         for _ in range(200):
             if os.path.exists(bd_plugins_dir):
-                plugin_dir = os.path.dirname(__file__)
-                src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
                 if os.path.exists(src_file):
                     try:
-                        shutil.copy2(src_file, dest_file)
-                        msg = _("BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.")
-                        wx.CallAfter(speech.speakText, msg)
-                        break
+                        should_copy = False
+                        if not os.path.exists(dest_file):
+                            should_copy = True
+                        else:
+                            if os.path.getsize(src_file) != os.path.getsize(dest_file):
+                                should_copy = True
+                        if should_copy:
+                            shutil.copy2(src_file, dest_file)
+                            msg = _("BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.")
+                            wx.CallAfter(speech.speakText, msg)
+                            break
                     except Exception:
                         pass
             time.sleep(3)
@@ -130,50 +151,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not conf["speak_join"]:
                 return
             if channel:
-                msg = _("{user} joined voice channel {channel}").format(user=user, channel=channel)
+                msg = "{user} joined voice channel {channel}".format(user=user, channel=channel)
             else:
-                msg = _("{user} joined").format(user=user)
+                msg = "{user} joined".format(user=user)
         elif event_type == "leave":
             if not conf["speak_leave"]:
                 return
             if channel:
-                msg = _("{user} left voice channel {channel}").format(user=user, channel=channel)
+                msg = "{user} left voice channel {channel}".format(user=user, channel=channel)
             else:
-                msg = _("{user} left").format(user=user)
+                msg = "{user} left".format(user=user)
         elif event_type == "mute":
             if not conf["speak_mute"]:
                 return
-            state_str = _("muted") if state == "muted" else _("unmuted")
-            msg = _("{user} {state}").format(user=user, state=state_str)
+            state_str = "muted" if state == "muted" else "unmuted"
+            msg = "{user} {state}".format(user=user, state=state_str)
         elif event_type == "deafen":
             if not conf["speak_deafen"]:
                 return
-            state_str = _("deafened") if state == "deafened" else _("undeafened")
-            msg = _("{user} {state}").format(user=user, state=state_str)
+            state_str = "deafened" if state == "deafened" else "undeafened"
+            msg = "{user} {state}".format(user=user, state=state_str)
         elif event_type == "stream_status":
             if not conf["speak_stream_status"]:
                 return
             if state == "started":
                 if target:
-                    msg = _("{user} started streaming {target}").format(user=user, target=target)
+                    msg = "{user} started streaming {target}".format(user=user, target=target)
                 else:
-                    msg = _("{user} started streaming").format(user=user)
+                    msg = "{user} started streaming".format(user=user)
             else:
-                msg = _("{user} stopped streaming").format(user=user)
+                msg = "{user} stopped streaming".format(user=user)
         elif event_type == "stream_join":
             if not conf["speak_stream_viewer"]:
                 return
-            msg = _("{user} joined your stream").format(user=user)
+            msg = "{user} joined your stream".format(user=user)
         elif event_type == "stream_leave":
             if not conf["speak_stream_viewer"]:
                 return
-            msg = _("{user} left your stream").format(user=user)
+            msg = "{user} left your stream".format(user=user)
         elif event_type == "message":
             if not conf["speak_message"]:
                 return
             if len(content) > 100:
                 content = content[:97] + "..."
-            msg = _("New message from {user}: {content}").format(user=user, content=content)
+            msg = "New message from {user}: {content}".format(user=user, content=content)
 
         if msg:
             speech.cancelSpeech()

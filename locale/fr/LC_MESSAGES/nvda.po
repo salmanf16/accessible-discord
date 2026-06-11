@@ -74,54 +74,9 @@ msgstr "Échec du téléchargement de BetterDiscord : {error}"
 msgid "Install BetterDiscord"
 msgstr "Installer BetterDiscord"
 
-msgid "New message from {user}: {content}"
-msgstr "Nouveau message de {user} : {content}"
-
-msgid "deafened"
-msgstr "sourdine"
-
-msgid "muted"
-msgstr "muet"
-
-msgid "undeafened"
-msgstr "sourdine désactivée"
-
-msgid "unmuted"
-msgstr "non muet"
-
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} min et {seconds} sec"
 
 msgid "{seconds} sec"
 msgstr "{seconds} sec"
-
-msgid "{user} joined"
-msgstr "{user} a rejoint"
-
-msgid "{user} joined voice channel {channel}"
-msgstr "{user} a rejoint le salon vocal {channel}"
-
-msgid "{user} joined your stream"
-msgstr "{user} a rejoint votre diffusion"
-
-msgid "{user} left"
-msgstr "{user} a quitté"
-
-msgid "{user} left voice channel {channel}"
-msgstr "{user} a quitté le salon vocal {channel}"
-
-msgid "{user} left your stream"
-msgstr "{user} a quitté votre diffusion"
-
-msgid "{user} started streaming"
-msgstr "{user} a commencé à diffuser"
-
-msgid "{user} started streaming {target}"
-msgstr "{user} a commencé à diffuser {target}"
-
-msgid "{user} stopped streaming"
-msgstr "{user} a arrêté de diffuser"
-
-msgid "{user} {state}"
-msgstr "{user} {state}"
 
