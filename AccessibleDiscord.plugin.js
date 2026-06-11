@@ -243,16 +243,25 @@ module.exports = class AccessibleDiscord {
         try {
             const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
             if (ApplicationStreamingStore) {
-                let state = ApplicationStreamingStore.getState();
+                let props = {};
+                for (let prop in ApplicationStreamingStore) {
+                    if (typeof ApplicationStreamingStore[prop] !== "function") {
+                        try {
+                            props[prop] = ApplicationStreamingStore[prop];
+                        } catch (e) {
+                            props[prop] = `error: ${e.message}`;
+                        }
+                    }
+                }
                 this.sendEvent({
                     type: "debug_log",
-                    message: `attempt ${attempt} for ${userName}: state keys: ${Object.keys(state).join(", ")}, state content: ${JSON.stringify(state)}`
+                    message: `attempt ${attempt} for ${userName}: properties: ${JSON.stringify(props)}`
                 });
             }
         } catch (e) {
             this.sendEvent({
                 type: "debug_log",
-                message: `Error in debug logging state: ${e.message}`
+                message: `Error in debug logging properties: ${e.message}`
             });
         }
 
