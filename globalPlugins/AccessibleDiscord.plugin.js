@@ -205,64 +205,90 @@ module.exports = class AccessibleDiscord {
         this.checkStreamViewers();
     }
 
-    getStreamTarget(userId) {
+    getStreamTargetFromMeta(meta, userId) {
+        // 1. Direct names
+        const name = meta.sourceName || meta.applicationName || meta.name;
+        if (name) return name;
+
+        // 2. game object structure
+        if (meta.game && meta.game.name) return meta.game.name;
+        if (meta.game && typeof meta.game === "string") return meta.game;
+
+        // 3. Resolve by application ID via ApplicationStore
+        if (meta.id) {
+            const ApplicationStore = this.getStore("ApplicationStore");
+            if (ApplicationStore) {
+                const app = ApplicationStore.getApplication(meta.id);
+                if (app && app.name) return app.name;
+            }
+        }
+
+        // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
+        if (meta.id) {
+            const PresenceStore = this.getStore("PresenceStore");
+            if (PresenceStore) {
+                const activities = PresenceStore.getActivities(userId) || [];
+                for (const act of activities) {
+                    if (act && act.applicationId === meta.id && act.name) {
+                        return act.name;
+                    }
+                }
+            }
+        }
+
+        return "";
+    }
+
+    announceStreamStart(userId, userName, attempt = 1) {
         try {
             const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
             if (ApplicationStreamingStore) {
                 let stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
                 if (stream) {
                     let meta = ApplicationStreamingStore.getStreamerActiveStreamMetadataForStream(stream);
+                    
                     this.sendEvent({
                         type: "debug_log",
-                        message: `stream: ${JSON.stringify(stream)}, meta: ${JSON.stringify(meta)}`
+                        message: `announceStreamStart attempt ${attempt} for ${userName}: stream found, meta: ${JSON.stringify(meta)}`
                     });
 
                     if (meta) {
-                        // 1. Direct names
-                        const name = meta.sourceName || meta.applicationName || meta.name;
-                        if (name) return name;
-
-                        // 2. game object structure
-                        if (meta.game && meta.game.name) return meta.game.name;
-                        if (meta.game && typeof meta.game === "string") return meta.game;
-
-                        // 3. Resolve by application ID via ApplicationStore
-                        if (meta.id) {
-                            const ApplicationStore = this.getStore("ApplicationStore");
-                            if (ApplicationStore) {
-                                const app = ApplicationStore.getApplication(meta.id);
-                                if (app && app.name) return app.name;
-                            }
-                        }
-
-                        // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
-                        if (meta.id) {
-                            const PresenceStore = this.getStore("PresenceStore");
-                            if (PresenceStore) {
-                                const activities = PresenceStore.getActivities(userId) || [];
-                                for (const act of activities) {
-                                    if (act && act.applicationId === meta.id && act.name) {
-                                        return act.name;
-                                    }
-                                }
-                            }
-                        }
+                        const streamTarget = this.getStreamTargetFromMeta(meta, userId);
+                        this.sendEvent({
+                            type: "stream_status",
+                            user: userName,
+                            state: "started",
+                            target: streamTarget
+                        });
+                        return;
                     }
                 } else {
                     this.sendEvent({
                         type: "debug_log",
-                        message: `No active stream found for user ${userId} via getAnyStreamForUser`
+                        message: `announceStreamStart attempt ${attempt} for ${userName}: stream is null`
                     });
                 }
             }
         } catch (e) {
             this.sendEvent({
                 type: "debug_log",
-                message: `Error in getStreamTarget: ${e.message}`
+                message: `Error in announceStreamStart: ${e.message}`
             });
         }
 
-        return "";
+        if (attempt < 4) {
+            setTimeout(() => {
+                this.announceStreamStart(userId, userName, attempt + 1);
+            }, 500);
+        } else {
+            // After 4 attempts (2 seconds total), announce without a game name if still not found
+            this.sendEvent({
+                type: "stream_status",
+                user: userName,
+                state: "started",
+                target: ""
+            });
+        }
     }
 
     checkStreamViewers() {
@@ -390,13 +416,7 @@ module.exports = class AccessibleDiscord {
             const oldStream = oldState ? (oldState.selfStream || false) : false;
             const newStream = event.selfStream || false;
             if (newStream) {
-                const streamTarget = this.getStreamTarget(event.userId);
-                this.sendEvent({
-                    type: "stream_status",
-                    user: userName,
-                    state: "started",
-                    target: streamTarget
-                });
+                this.announceStreamStart(event.userId, userName);
             }
         }
         else if (oldState !== undefined && oldState.channelId === myChannelId && event.channelId !== myChannelId) {
@@ -441,13 +461,7 @@ module.exports = class AccessibleDiscord {
             const newStream = event.selfStream || false;
             if (oldStream !== newStream) {
                 if (newStream) {
-                    const streamTarget = this.getStreamTarget(event.userId);
-                    this.sendEvent({
-                        type: "stream_status",
-                        user: userName,
-                        state: "started",
-                        target: streamTarget
-                    });
+                    this.announceStreamStart(event.userId, userName);
                 } else {
                     this.sendEvent({
                         type: "stream_status",
