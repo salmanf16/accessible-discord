@@ -14,10 +14,7 @@ import addonHandler
 import logHandler
 
 logHandler.log.info("Accessible Discord global plugin loading")
-try:
-    addonHandler.initTranslation()
-except Exception:
-    pass
+addonHandler.initTranslation()
 
 confspec = {
     "speak_join": "boolean(default=True)",
