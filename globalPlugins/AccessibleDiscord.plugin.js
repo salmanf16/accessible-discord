@@ -246,8 +246,7 @@ module.exports = class AccessibleDiscord {
             
             if (ApplicationStreamingStore) {
                 let stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
-                let presence = PresenceStore ? PresenceStore.getPresence(userId) : null;
-                let activities = PresenceStore ? PresenceStore.getActivities(userId) : [];
+                let activities = PresenceStore ? (PresenceStore.getActivities ? PresenceStore.getActivities(userId) : []) : [];
                 
                 let streamKeys = [];
                 let streamProtoKeys = [];
@@ -260,7 +259,7 @@ module.exports = class AccessibleDiscord {
 
                 this.sendEvent({
                     type: "debug_log",
-                    message: `attempt ${attempt} for ${userName}: streamKeys: ${JSON.stringify(streamKeys)}, streamProtoKeys: ${JSON.stringify(streamProtoKeys)}, presence: ${JSON.stringify(presence)}, activities: ${JSON.stringify(activities)}`
+                    message: `attempt ${attempt} for ${userName}: streamKeys: ${JSON.stringify(streamKeys)}, streamProtoKeys: ${JSON.stringify(streamProtoKeys)}, activities: ${JSON.stringify(activities)}`
                 });
             }
         } catch (e) {
