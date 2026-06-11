@@ -1,8 +1,12 @@
 name = %addon_name%
 summary = "%addon_summary%"
-description = "%addon_description%"
+description = """%addon_description%"""
 author = "%addon_author%"
 url = %addon_url%
 version = %addon_version%
 minimumNVDAVersion = %addon_minimumNVDAVersion%
 lastTestedNVDAVersion = %addon_lastTestedNVDAVersion%
+changelog = """%addon_changelog%"""
+license = "%addon_license%"
+licenseURL = "%addon_licenseURL%"
+

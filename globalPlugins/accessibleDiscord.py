@@ -1,0 +1,180 @@
+# -*- coding: utf-8 -*-
+import os
+import shutil
+import threading
+from http.server import HTTPServer
+import wx
+import config
+import speech
+import globalPluginHandler
+import gui
+from gui import settingsDialogs
+import addonHandler
+import logHandler
+
+logHandler.log.info("Accessible Discord global plugin package loading")
+addonHandler.initTranslation()
+
+from . import settings
+from . import server
+
+confspec = {
+    "speak_join": "boolean(default=True)",
+    "speak_leave": "boolean(default=True)",
+    "speak_mute": "boolean(default=True)",
+    "speak_deafen": "boolean(default=True)",
+    "speak_stream_status": "boolean(default=True)",
+    "speak_stream_viewer": "boolean(default=True)",
+    "speak_message": "boolean(default=True)",
+}
+config.conf.spec["accessibleDiscord"] = confspec
+
+class GlobalPlugin(globalPluginHandler.GlobalPlugin):
+    server_thread = None
+    server_inst = None
+
+    def __init__(self):
+        super(GlobalPlugin, self).__init__()
+        gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(settings.AccessibleDiscordSettingsPanel)
+        server.NVDAEventRequestHandler.plugin_instance = self
+        self.start_server()
+        self.deploy_bd_plugin()
+        threading.Thread(target=self.monitor_and_deploy_bd, daemon=True).start()
+
+    def terminate(self):
+        try:
+            gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(settings.AccessibleDiscordSettingsPanel)
+        except Exception:
+            pass
+        self.stop_server()
+        super(GlobalPlugin, self).terminate()
+
+    def start_server(self):
+        def run_server():
+            try:
+                self.server_inst = HTTPServer(('127.0.0.1', 48321), server.NVDAEventRequestHandler)
+                self.server_inst.serve_forever()
+            except Exception:
+                pass
+
+        self.server_thread = threading.Thread(target=run_server)
+        self.server_thread.daemon = True
+        self.server_thread.start()
+
+    def stop_server(self):
+        if self.server_inst:
+            try:
+                self.server_inst.shutdown()
+                self.server_inst.server_close()
+            except Exception:
+                pass
+            self.server_inst = None
+        if self.server_thread:
+            self.server_thread.join(timeout=1.0)
+            self.server_thread = None
+
+    def deploy_bd_plugin(self):
+        appdata = os.environ.get("APPDATA")
+        if not appdata:
+            return False
+        bd_plugins_dir = os.path.join(appdata, "BetterDiscord", "plugins")
+        if not os.path.exists(bd_plugins_dir):
+            return False
+        plugin_dir = os.path.dirname(__file__)
+        src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
+        dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
+        if os.path.exists(src_file):
+            try:
+                shutil.copy2(src_file, dest_file)
+                return True
+            except Exception:
+                pass
+        return False
+
+    def monitor_and_deploy_bd(self):
+        import time
+        appdata = os.environ.get("APPDATA")
+        if not appdata:
+            return
+        bd_plugins_dir = os.path.join(appdata, "BetterDiscord", "plugins")
+        dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
+        if os.path.exists(dest_file):
+            return
+        for _ in range(200):
+            if os.path.exists(bd_plugins_dir):
+                plugin_dir = os.path.dirname(__file__)
+                src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
+                if os.path.exists(src_file):
+                    try:
+                        shutil.copy2(src_file, dest_file)
+                        msg = _("BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.")
+                        wx.CallAfter(speech.speakText, msg)
+                        break
+                    except Exception:
+                        pass
+            time.sleep(3)
+
+    def handle_event(self, event):
+        logHandler.log.info(f"Accessible Discord received event: {event}")
+        event_type = event.get("type")
+        user = event.get("user", "")
+        channel = event.get("channel", "")
+        content = event.get("content", "")
+        state = event.get("state", "")
+        target = event.get("target", "")
+
+        conf = config.conf["accessibleDiscord"]
+        msg = ""
+
+        if event_type == "join":
+            if not conf["speak_join"]:
+                return
+            if channel:
+                msg = _("{user} joined voice channel {channel}").format(user=user, channel=channel)
+            else:
+                msg = _("{user} joined").format(user=user)
+        elif event_type == "leave":
+            if not conf["speak_leave"]:
+                return
+            if channel:
+                msg = _("{user} left voice channel {channel}").format(user=user, channel=channel)
+            else:
+                msg = _("{user} left").format(user=user)
+        elif event_type == "mute":
+            if not conf["speak_mute"]:
+                return
+            state_str = _("muted") if state == "muted" else _("unmuted")
+            msg = _("{user} {state}").format(user=user, state=state_str)
+        elif event_type == "deafen":
+            if not conf["speak_deafen"]:
+                return
+            state_str = _("deafened") if state == "deafened" else _("undeafened")
+            msg = _("{user} {state}").format(user=user, state=state_str)
+        elif event_type == "stream_status":
+            if not conf["speak_stream_status"]:
+                return
+            if state == "started":
+                if target:
+                    msg = _("{user} started streaming {target}").format(user=user, target=target)
+                else:
+                    msg = _("{user} started streaming").format(user=user)
+            else:
+                msg = _("{user} stopped streaming").format(user=user)
+        elif event_type == "stream_join":
+            if not conf["speak_stream_viewer"]:
+                return
+            msg = _("{user} joined your stream").format(user=user)
+        elif event_type == "stream_leave":
+            if not conf["speak_stream_viewer"]:
+                return
+            msg = _("{user} left your stream").format(user=user)
+        elif event_type == "message":
+            if not conf["speak_message"]:
+                return
+            if len(content) > 100:
+                content = content[:97] + "..."
+            msg = _("New message from {user}: {content}").format(user=user, content=content)
+
+        if msg:
+            speech.cancelSpeech()
+            speech.speakText(msg)

@@ -149,6 +149,14 @@ def package_addon():
 
 if __name__ == "__main__":
     print("--- NVDA Accessible Discord Addon Deploy & Package ---")
+    
+    # Run translation pipeline
+    try:
+        from translate_all_locales import clean_and_translate_locales
+        clean_and_translate_locales()
+    except Exception as e:
+        print(f"Warning: Failed to run translation pipeline: {e}")
+        
     manifest_success = generate_manifest()
     
     if manifest_success:

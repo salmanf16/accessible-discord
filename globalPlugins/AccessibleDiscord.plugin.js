@@ -8,18 +8,18 @@
 module.exports = class AccessibleDiscord {
     constructor() {
         this.lastVoiceStates = new Map();
+        this.lastStreamViewers = new Set();
+        this.streamCheckInterval = null;
     }
 
     getStore(name) {
         try {
             const store = BdApi.Webpack.getModule(m => m.getName && m.getName() === name, { searchExports: true });
             if (store) return store;
-            
             if (BdApi.Webpack.getStore) {
                 const store = BdApi.Webpack.getStore(name);
                 if (store) return store;
             }
-            
             if (name === "UserStore") {
                 return BdApi.Webpack.getModule(m => m.getCurrentUser && m.getUser, { searchExports: true });
             } else if (name === "VoiceStateStore") {
@@ -28,6 +28,10 @@ module.exports = class AccessibleDiscord {
                 return BdApi.Webpack.getModule(m => m.getChannel && m.hasChannel, { searchExports: true });
             } else if (name === "SelectedChannelStore") {
                 return BdApi.Webpack.getModule(m => m.getChannelId && m.getVoiceChannelId, { searchExports: true });
+            } else if (name === "ApplicationStreamingStore") {
+                return BdApi.Webpack.getModule(m => m.getCurrentUserActiveStream && m.getViewerIds, { searchExports: true });
+            } else if (name === "PresenceStore") {
+                return BdApi.Webpack.getModule(m => m.getActivities && m.getPresence, { searchExports: true });
             }
         } catch (e) {
             console.error(`[AccessibleDiscord] Failed to get store ${name}:`, e);
@@ -42,12 +46,10 @@ module.exports = class AccessibleDiscord {
         } catch (e) {
             console.error("[AccessibleDiscord] Failed to get Dispatcher via filter:", e);
         }
-        
         try {
             if (BdApi.Webpack.getByProps) {
                 let disp = BdApi.Webpack.getByProps("dispatch", "subscribe", "dirtyDispatch");
                 if (disp) return disp;
-                
                 disp = BdApi.Webpack.getByProps("dirtyDispatch");
                 if (disp) return disp;
             }
@@ -64,6 +66,7 @@ module.exports = class AccessibleDiscord {
     start() {
         console.log("[AccessibleDiscord] Starting plugin...");
         this.lastVoiceStates.clear();
+        this.lastStreamViewers.clear();
 
         try {
             const VoiceStateStore = this.getStore("VoiceStateStore");
@@ -77,7 +80,8 @@ module.exports = class AccessibleDiscord {
                             selfMute: vs.selfMute,
                             selfDeaf: vs.selfDeaf,
                             mute: vs.mute,
-                            deaf: vs.deaf
+                            deaf: vs.deaf,
+                            selfStream: vs.selfStream || false
                         });
                     }
                 }
@@ -91,24 +95,27 @@ module.exports = class AccessibleDiscord {
             this.handleVoiceStateUpdate = this.handleVoiceStateUpdate.bind(this);
             this.handleVoiceStateUpdates = this.handleVoiceStateUpdates.bind(this);
             this.handleMessageCreate = this.handleMessageCreate.bind(this);
-            
+            this.handleStreamEvent = this.handleStreamEvent.bind(this);
+
             dispatcher.subscribe("VOICE_STATE_UPDATE", this.handleVoiceStateUpdate);
             dispatcher.subscribe("VOICE_STATE_UPDATES", this.handleVoiceStateUpdates);
             dispatcher.subscribe("MESSAGE_CREATE", this.handleMessageCreate);
+            dispatcher.subscribe("STREAM_CREATE", this.handleStreamEvent);
+            dispatcher.subscribe("STREAM_DELETE", this.handleStreamEvent);
+            dispatcher.subscribe("STREAM_WATCH", this.handleStreamEvent);
+            dispatcher.subscribe("STREAM_UPDATE", this.handleStreamEvent);
 
             try {
                 const origDispatch = dispatcher.dispatch;
                 const origDirtyDispatch = dispatcher.dirtyDispatch;
-                
                 const logAction = (action) => {
                     if (action && action.type) {
                         const type = action.type;
-                        if (type.includes("VOICE") || type.includes("MESSAGE") || type.includes("CHANNEL") || type.includes("MUTE")) {
+                        if (type.includes("VOICE") || type.includes("MESSAGE") || type.includes("CHANNEL") || type.includes("MUTE") || type.includes("STREAM") || type.includes("WATCH")) {
                             console.log("[AccessibleDiscord] Intercepted dispatcher action:", type, JSON.stringify(action));
                         }
                     }
                 };
-                
                 if (origDispatch && !origDispatch.__accessibleDiscordHooked) {
                     dispatcher.dispatch = function(action) {
                         logAction(action);
@@ -128,7 +135,6 @@ module.exports = class AccessibleDiscord {
             } catch (err) {
                 console.error("[AccessibleDiscord] Error hooking dispatcher:", err);
             }
-            
             console.log("[AccessibleDiscord] Subscribed to Discord events successfully.");
         } else {
             console.error("[AccessibleDiscord] Could not subscribe: Dispatcher not found.");
@@ -137,11 +143,21 @@ module.exports = class AccessibleDiscord {
 
     stop() {
         console.log("[AccessibleDiscord] Stopping plugin...");
+        if (this.streamCheckInterval) {
+            clearInterval(this.streamCheckInterval);
+            this.streamCheckInterval = null;
+        }
         const dispatcher = this.getDispatcher();
         if (dispatcher) {
             if (this.handleVoiceStateUpdate) dispatcher.unsubscribe("VOICE_STATE_UPDATE", this.handleVoiceStateUpdate);
             if (this.handleVoiceStateUpdates) dispatcher.unsubscribe("VOICE_STATE_UPDATES", this.handleVoiceStateUpdates);
             if (this.handleMessageCreate) dispatcher.unsubscribe("MESSAGE_CREATE", this.handleMessageCreate);
+            if (this.handleStreamEvent) {
+                dispatcher.unsubscribe("STREAM_CREATE", this.handleStreamEvent);
+                dispatcher.unsubscribe("STREAM_DELETE", this.handleStreamEvent);
+                dispatcher.unsubscribe("STREAM_WATCH", this.handleStreamEvent);
+                dispatcher.unsubscribe("STREAM_UPDATE", this.handleStreamEvent);
+            }
 
             if (this._origDispatch) {
                 dispatcher.dispatch = this._origDispatch;
@@ -151,6 +167,91 @@ module.exports = class AccessibleDiscord {
             }
         }
         this.lastVoiceStates.clear();
+        this.lastStreamViewers.clear();
+    }
+
+    handleStreamEvent(event) {
+        console.log("[AccessibleDiscord] handleStreamEvent event:", JSON.stringify(event));
+        this.checkStreamViewers();
+    }
+
+    getStreamTarget(userId) {
+        try {
+            const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
+            if (ApplicationStreamingStore) {
+                let meta = ApplicationStreamingStore.getStreamerActiveStreamMetadata(userId);
+                if (!meta) {
+                    meta = ApplicationStreamingStore.getStreamerActiveStreamMetadata({ streamerId: userId });
+                }
+                if (meta) {
+                    const name = meta.sourceName || meta.applicationName || meta.name || (meta.game && (meta.game.name || (typeof meta.game === "string" ? meta.game : "")));
+                    if (name) return name;
+                }
+            }
+        } catch (e) {
+            console.error("[AccessibleDiscord] Error getting stream metadata:", e);
+        }
+
+        return "";
+    }
+
+    checkStreamViewers() {
+        try {
+            const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
+            const UserStore = this.getStore("UserStore");
+            if (!ApplicationStreamingStore || !UserStore) return;
+
+            const stream = ApplicationStreamingStore.getCurrentUserActiveStream();
+            if (!stream) {
+                if (this.lastStreamViewers.size > 0) {
+                    this.lastStreamViewers.clear();
+                }
+                if (this.streamCheckInterval) {
+                    clearInterval(this.streamCheckInterval);
+                    this.streamCheckInterval = null;
+                }
+                return;
+            }
+
+            if (!this.streamCheckInterval) {
+                this.streamCheckInterval = setInterval(() => this.checkStreamViewers(), 3000);
+            }
+
+            const currentViewerIds = ApplicationStreamingStore.getViewerIds(stream) || [];
+            const currentSet = new Set(currentViewerIds);
+
+            for (const userId of currentViewerIds) {
+                if (!this.lastStreamViewers.has(userId)) {
+                    this.lastStreamViewers.add(userId);
+                    const currentUser = UserStore.getCurrentUser();
+                    if (currentUser && userId === currentUser.id) continue;
+
+                    const user = UserStore.getUser(userId);
+                    const userName = user ? (user.globalName || user.username) : "Unknown User";
+                    this.sendEvent({
+                        type: "stream_join",
+                        user: userName
+                    });
+                }
+            }
+
+            for (const userId of this.lastStreamViewers) {
+                if (!currentSet.has(userId)) {
+                    this.lastStreamViewers.delete(userId);
+                    const currentUser = UserStore.getCurrentUser();
+                    if (currentUser && userId === currentUser.id) continue;
+
+                    const user = UserStore.getUser(userId);
+                    const userName = user ? (user.globalName || user.username) : "Unknown User";
+                    this.sendEvent({
+                        type: "stream_leave",
+                        user: userName
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("[AccessibleDiscord] Error checking stream viewers:", e);
+        }
     }
 
     handleVoiceStateUpdates(event) {
@@ -194,12 +295,13 @@ module.exports = class AccessibleDiscord {
             selfMute: event.selfMute,
             selfDeaf: event.selfDeaf,
             mute: event.mute,
-            deaf: event.deaf
+            deaf: event.deaf,
+            selfStream: event.selfStream || false
         };
-
         this.lastVoiceStates.set(event.userId, newState);
 
         if (event.userId === myUserId) {
+            this.checkStreamViewers();
             console.log("[AccessibleDiscord] Event is from self. Skipping.");
             return;
         }
@@ -215,6 +317,17 @@ module.exports = class AccessibleDiscord {
                 user: userName,
                 channel: channelName
             });
+            const oldStream = oldState ? (oldState.selfStream || false) : false;
+            const newStream = event.selfStream || false;
+            if (newStream) {
+                const streamTarget = this.getStreamTarget(event.userId);
+                this.sendEvent({
+                    type: "stream_status",
+                    user: userName,
+                    state: "started",
+                    target: streamTarget
+                });
+            }
         }
         else if (oldState !== undefined && oldState.channelId === myChannelId && event.channelId !== myChannelId) {
             const channel = ChannelStore.getChannel(myChannelId);
@@ -224,6 +337,14 @@ module.exports = class AccessibleDiscord {
                 user: userName,
                 channel: channelName
             });
+            const oldStream = oldState.selfStream || false;
+            if (oldStream) {
+                this.sendEvent({
+                    type: "stream_status",
+                    user: userName,
+                    state: "stopped"
+                });
+            }
         }
         else if (oldState !== undefined && oldState.channelId === myChannelId && event.channelId === myChannelId) {
             const oldMute = oldState.selfMute || oldState.mute;
@@ -243,6 +364,18 @@ module.exports = class AccessibleDiscord {
                     type: "deafen",
                     user: userName,
                     state: newDeaf ? "deafened" : "undeafened"
+                });
+            }
+
+            const oldStream = oldState.selfStream || false;
+            const newStream = event.selfStream || false;
+            if (oldStream !== newStream) {
+                const streamTarget = this.getStreamTarget(event.userId);
+                this.sendEvent({
+                    type: "stream_status",
+                    user: userName,
+                    state: newStream ? "started" : "stopped",
+                    target: streamTarget
                 });
             }
         }
@@ -289,7 +422,13 @@ module.exports = class AccessibleDiscord {
 
     sendEvent(data) {
         const locale = this.getLocale();
-        const lang = locale.toLowerCase().startsWith("ar") ? "ar" : "en";
+        let lang = "en";
+        const lowerLocale = locale.toLowerCase();
+        if (lowerLocale.startsWith("ar")) {
+            lang = "ar";
+        } else if (lowerLocale.startsWith("fr")) {
+            lang = "fr";
+        }
         data.lang = lang;
         console.log("[AccessibleDiscord] Sending event to NVDA addon:", JSON.stringify(data));
 

@@ -29,8 +29,17 @@ msgstr "نطق كتم وإلغاء كتم ميكروفون الأعضاء"
 msgid "Announce when members join a voice channel"
 msgstr "نطق انضمام الأعضاء للقناة الصوتية"
 
+msgid "Announce when members join or leave your stream"
+msgstr "نطق انضمام ومغادرة الأعضاء لبثك"
+
 msgid "Announce when members leave a voice channel"
 msgstr "نطق مغادرة الأعضاء للقناة الصوتية"
+
+msgid "Announce when members start or stop streaming"
+msgstr "نطق بدء وإيقاف بث الأعضاء"
+
+msgid "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings."
+msgstr "تم تثبيت ملحق ديسكورد المساعد تلقائياً بنجاح. يرجى تفعيله من إعدادات ديسكورد."
 
 msgid "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window."
 msgstr "تم تحميل مثبت BetterDiscord بنجاح وفتحه. يرجى إكمال التثبيت من النافذة المفتوحة."
@@ -62,8 +71,8 @@ msgstr "جاري التحميل..."
 msgid "Failed to download BetterDiscord: {error}"
 msgstr "فشل تحميل BetterDiscord: {error}"
 
-msgid "Install BetterDiscord (automatic)"
-msgstr "تثبيت BetterDiscord (تلقائي)"
+msgid "Install BetterDiscord"
+msgstr "تثبيت BetterDiscord"
 
 msgid "New message from {user}: {content}"
 msgstr "رسالة جديدة من {user}: {content}"
@@ -92,11 +101,26 @@ msgstr "{user} انضم للقناة"
 msgid "{user} joined voice channel {channel}"
 msgstr "{user} انضم إلى القناة الصوتية {channel}"
 
+msgid "{user} joined your stream"
+msgstr "{user} انضم إلى بثك"
+
 msgid "{user} left"
 msgstr "{user} غادر القناة"
 
 msgid "{user} left voice channel {channel}"
 msgstr "{user} غادر القناة الصوتية {channel}"
+
+msgid "{user} left your stream"
+msgstr "{user} غادر بثك"
+
+msgid "{user} started streaming"
+msgstr "{user} بدأ بثاً"
+
+msgid "{user} started streaming {target}"
+msgstr "{user} بدأ بثاً لـ {target}"
+
+msgid "{user} stopped streaming"
+msgstr "{user} أوقف البث"
 
 msgid "{user} {state}"
 msgstr "{user} {state}"

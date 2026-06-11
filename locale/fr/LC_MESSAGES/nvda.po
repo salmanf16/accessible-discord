@@ -1,0 +1,127 @@
+# NVDA Accessible Discord Addon - fr
+# This file is distributed under the same license as the accessibleDiscord package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: accessibleDiscord 1.0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-11 00:00+0000\n"
+"PO-Revision-Date: 2026-06-11 00:00+0000\n"
+"Last-Translator: Accessible Discord Translation Pipeline\n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Accessible Discord"
+msgstr "Accessible Discord"
+
+msgid "Announce headset deafen/undeafen status changes"
+msgstr "Annoncer les changements d'état de sourdine du casque"
+
+msgid "Announce incoming text messages in the active channel"
+msgstr "Annoncer les messages texte entrants dans le salon actif"
+
+msgid "Announce microphone mute/unmute status changes"
+msgstr "Annoncer les changements d'état du muet/non muet du microphone"
+
+msgid "Announce when members join a voice channel"
+msgstr "Annoncer quand les membres rejoignent un salon vocal"
+
+msgid "Announce when members join or leave your stream"
+msgstr "Annoncer quand les membres rejoignent ou quittent votre diffusion"
+
+msgid "Announce when members leave a voice channel"
+msgstr "Annoncer quand les membres quittent un salon vocal"
+
+msgid "Announce when members start or stop streaming"
+msgstr "Annoncer quand les membres commencent ou arrêtent de diffuser"
+
+msgid "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings."
+msgstr "L'extension compagnon BetterDiscord a été copiée automatiquement. Veuillez l'activer dans les paramètres de Discord."
+
+msgid "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window."
+msgstr "L'installateur BetterDiscord a été téléchargé et ouvert avec succès. Veuillez terminer l'installation dans la fenêtre ouverte."
+
+msgid "Calculating..."
+msgstr "Calcul en cours..."
+
+msgid "Connecting to server..."
+msgstr "Connexion au serveur..."
+
+msgid "Download failed, retry"
+msgstr "Le téléchargement a échoué, réessayez"
+
+msgid "Downloaded {downloaded} KB"
+msgstr "Téléchargé {downloaded} Ko"
+
+msgid "Downloaded {downloaded} KB of {total} KB ({percent}%)\nTime remaining: {remaining}"
+msgstr "Téléchargé {downloaded} Ko sur {total} Ko ({percent}%)\nTemps restant : {remaining}"
+
+msgid "Downloading BetterDiscord"
+msgstr "Téléchargement de BetterDiscord"
+
+msgid "Downloading BetterDiscord installer, please wait..."
+msgstr "Téléchargement de l'installateur BetterDiscord, veuillez patienter..."
+
+msgid "Downloading..."
+msgstr "Téléchargement..."
+
+msgid "Failed to download BetterDiscord: {error}"
+msgstr "Échec du téléchargement de BetterDiscord : {error}"
+
+msgid "Install BetterDiscord"
+msgstr "Installer BetterDiscord"
+
+msgid "New message from {user}: {content}"
+msgstr "Nouveau message de {user} : {content}"
+
+msgid "deafened"
+msgstr "sourdine"
+
+msgid "muted"
+msgstr "muet"
+
+msgid "undeafened"
+msgstr "sourdine désactivée"
+
+msgid "unmuted"
+msgstr "non muet"
+
+msgid "{minutes} min and {seconds} sec"
+msgstr "{minutes} min et {seconds} sec"
+
+msgid "{seconds} sec"
+msgstr "{seconds} sec"
+
+msgid "{user} joined"
+msgstr "{user} a rejoint"
+
+msgid "{user} joined voice channel {channel}"
+msgstr "{user} a rejoint le salon vocal {channel}"
+
+msgid "{user} joined your stream"
+msgstr "{user} a rejoint votre diffusion"
+
+msgid "{user} left"
+msgstr "{user} a quitté"
+
+msgid "{user} left voice channel {channel}"
+msgstr "{user} a quitté le salon vocal {channel}"
+
+msgid "{user} left your stream"
+msgstr "{user} a quitté votre diffusion"
+
+msgid "{user} started streaming"
+msgstr "{user} a commencé à diffuser"
+
+msgid "{user} started streaming {target}"
+msgstr "{user} a commencé à diffuser {target}"
+
+msgid "{user} stopped streaming"
+msgstr "{user} a arrêté de diffuser"
+
+msgid "{user} {state}"
+msgstr "{user} {state}"
+
