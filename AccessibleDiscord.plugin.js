@@ -32,6 +32,8 @@ module.exports = class AccessibleDiscord {
                 return BdApi.Webpack.getModule(m => m.getCurrentUserActiveStream && m.getViewerIds, { searchExports: true });
             } else if (name === "PresenceStore") {
                 return BdApi.Webpack.getModule(m => m.getActivities && m.getPresence, { searchExports: true });
+            } else if (name === "ApplicationStore") {
+                return BdApi.Webpack.getModule(m => m.getApplication, { searchExports: true });
             }
         } catch (e) {
             console.error(`[AccessibleDiscord] Failed to get store ${name}:`, e);
@@ -184,8 +186,37 @@ module.exports = class AccessibleDiscord {
                     meta = ApplicationStreamingStore.getStreamerActiveStreamMetadata({ streamerId: userId });
                 }
                 if (meta) {
-                    const name = meta.sourceName || meta.applicationName || meta.name || (meta.game && (meta.game.name || (typeof meta.game === "string" ? meta.game : "")));
+                    // 1. Direct names
+                    const name = meta.sourceName || meta.applicationName || meta.name;
                     if (name) return name;
+
+                    // 2. game object structure
+                    if (meta.game && meta.game.name) return meta.game.name;
+                    if (meta.game && typeof meta.game === "string") return meta.game;
+
+                    // 3. Resolve by application ID via ApplicationStore
+                    if (meta.id) {
+                        const ApplicationStore = this.getStore("ApplicationStore");
+                        if (ApplicationStore) {
+                            const app = ApplicationStore.getApplication(meta.id);
+                            if (app && app.name) {
+                                return app.name;
+                            }
+                        }
+                    }
+
+                    // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
+                    if (meta.id) {
+                        const PresenceStore = this.getStore("PresenceStore");
+                        if (PresenceStore) {
+                            const activities = PresenceStore.getActivities(userId) || [];
+                            for (const act of activities) {
+                                if (act && act.applicationId === meta.id && act.name) {
+                                    return act.name;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } catch (e) {
