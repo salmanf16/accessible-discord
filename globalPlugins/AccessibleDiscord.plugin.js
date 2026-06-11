@@ -245,19 +245,28 @@ module.exports = class AccessibleDiscord {
             const PresenceStore = this.getStore("PresenceStore");
             
             if (ApplicationStreamingStore) {
-                let allActive = ApplicationStreamingStore.getAllActiveStreams() || [];
-                let allApps = ApplicationStreamingStore.getAllApplicationStreams() || [];
+                let stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
+                let presence = PresenceStore ? PresenceStore.getPresence(userId) : null;
                 let activities = PresenceStore ? PresenceStore.getActivities(userId) : [];
                 
+                let streamKeys = [];
+                let streamProtoKeys = [];
+                if (stream) {
+                    streamKeys = Object.getOwnPropertyNames(stream);
+                    try {
+                        streamProtoKeys = Object.getOwnPropertyNames(Object.getPrototypeOf(stream));
+                    } catch (e) {}
+                }
+
                 this.sendEvent({
                     type: "debug_log",
-                    message: `attempt ${attempt} for ${userName}: allActiveStreams: ${JSON.stringify(allActive)}, allAppStreams: ${JSON.stringify(allApps)}, presenceActivities: ${JSON.stringify(activities)}`
+                    message: `attempt ${attempt} for ${userName}: streamKeys: ${JSON.stringify(streamKeys)}, streamProtoKeys: ${JSON.stringify(streamProtoKeys)}, presence: ${JSON.stringify(presence)}, activities: ${JSON.stringify(activities)}`
                 });
             }
         } catch (e) {
             this.sendEvent({
                 type: "debug_log",
-                message: `Error in debug logging announceStreamStart: ${e.message}`
+                message: `Error in debug logging: ${e.message}`
             });
         }
 
