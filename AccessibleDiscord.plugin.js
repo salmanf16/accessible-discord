@@ -242,43 +242,22 @@ module.exports = class AccessibleDiscord {
     announceStreamStart(userId, userName, attempt = 1) {
         try {
             const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
+            const PresenceStore = this.getStore("PresenceStore");
+            
             if (ApplicationStreamingStore) {
-                let stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
-                if (stream) {
-                    const streamKey = `${stream.streamType}:${stream.guildId}:${stream.channelId}:${stream.ownerId}`;
-                    
-                    let m1 = ApplicationStreamingStore.getStreamerActiveStreamMetadata(userId);
-                    let m2 = ApplicationStreamingStore.getStreamerActiveStreamMetadata(streamKey);
-                    let m3 = ApplicationStreamingStore.getStreamerActiveStreamMetadataForStream(stream);
-                    let m4 = ApplicationStreamingStore.getStreamerActiveStreamMetadata({ streamerId: userId });
-                    
-                    this.sendEvent({
-                        type: "debug_log",
-                        message: `attempt ${attempt} for ${userName}: streamKey: ${streamKey}, m1(userId): ${JSON.stringify(m1)}, m2(streamKey): ${JSON.stringify(m2)}, m3(stream): ${JSON.stringify(m3)}, m4(obj): ${JSON.stringify(m4)}`
-                    });
-
-                    let meta = m1 || m2 || m3 || m4;
-                    if (meta) {
-                        const streamTarget = this.getStreamTargetFromMeta(meta, userId);
-                        this.sendEvent({
-                            type: "stream_status",
-                            user: userName,
-                            state: "started",
-                            target: streamTarget
-                        });
-                        return;
-                    }
-                } else {
-                    this.sendEvent({
-                        type: "debug_log",
-                        message: `announceStreamStart attempt ${attempt} for ${userName}: stream is null`
-                    });
-                }
+                let allActive = ApplicationStreamingStore.getAllActiveStreams() || [];
+                let allApps = ApplicationStreamingStore.getAllApplicationStreams() || [];
+                let activities = PresenceStore ? PresenceStore.getActivities(userId) : [];
+                
+                this.sendEvent({
+                    type: "debug_log",
+                    message: `attempt ${attempt} for ${userName}: allActiveStreams: ${JSON.stringify(allActive)}, allAppStreams: ${JSON.stringify(allApps)}, presenceActivities: ${JSON.stringify(activities)}`
+                });
             }
         } catch (e) {
             this.sendEvent({
                 type: "debug_log",
-                message: `Error in announceStreamStart: ${e.message}`
+                message: `Error in debug logging announceStreamStart: ${e.message}`
             });
         }
 
