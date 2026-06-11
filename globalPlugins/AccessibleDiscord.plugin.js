@@ -70,6 +70,34 @@ module.exports = class AccessibleDiscord {
         this.lastVoiceStates.clear();
         this.lastStreamViewers.clear();
 
+        // Debug: dump ApplicationStreamingStore keys to NVDA log
+        try {
+            const store = this.getStore("ApplicationStreamingStore");
+            if (store) {
+                let keys = [];
+                let obj = store;
+                while (obj) {
+                    keys = keys.concat(Object.getOwnPropertyNames(obj));
+                    obj = Object.getPrototypeOf(obj);
+                }
+                let uniqueKeys = [...new Set(keys)].filter(k => typeof store[k] === "function" || store[k] !== undefined);
+                this.sendEvent({
+                    type: "debug_log",
+                    message: `ApplicationStreamingStore keys: ${uniqueKeys.join(", ")}`
+                });
+            } else {
+                this.sendEvent({
+                    type: "debug_log",
+                    message: "ApplicationStreamingStore store not found"
+                });
+            }
+        } catch (e) {
+            this.sendEvent({
+                type: "debug_log",
+                message: `Error dumping store: ${e.message}`
+            });
+        }
+
         try {
             const VoiceStateStore = this.getStore("VoiceStateStore");
             if (VoiceStateStore) {
@@ -181,46 +209,57 @@ module.exports = class AccessibleDiscord {
         try {
             const ApplicationStreamingStore = this.getStore("ApplicationStreamingStore");
             if (ApplicationStreamingStore) {
-                let meta = ApplicationStreamingStore.getStreamerActiveStreamMetadata(userId);
-                if (!meta) {
-                    meta = ApplicationStreamingStore.getStreamerActiveStreamMetadata({ streamerId: userId });
-                }
-                if (meta) {
-                    // 1. Direct names
-                    const name = meta.sourceName || meta.applicationName || meta.name;
-                    if (name) return name;
+                let stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
+                if (stream) {
+                    let meta = ApplicationStreamingStore.getStreamerActiveStreamMetadataForStream(stream);
+                    this.sendEvent({
+                        type: "debug_log",
+                        message: `stream: ${JSON.stringify(stream)}, meta: ${JSON.stringify(meta)}`
+                    });
 
-                    // 2. game object structure
-                    if (meta.game && meta.game.name) return meta.game.name;
-                    if (meta.game && typeof meta.game === "string") return meta.game;
+                    if (meta) {
+                        // 1. Direct names
+                        const name = meta.sourceName || meta.applicationName || meta.name;
+                        if (name) return name;
 
-                    // 3. Resolve by application ID via ApplicationStore
-                    if (meta.id) {
-                        const ApplicationStore = this.getStore("ApplicationStore");
-                        if (ApplicationStore) {
-                            const app = ApplicationStore.getApplication(meta.id);
-                            if (app && app.name) {
-                                return app.name;
+                        // 2. game object structure
+                        if (meta.game && meta.game.name) return meta.game.name;
+                        if (meta.game && typeof meta.game === "string") return meta.game;
+
+                        // 3. Resolve by application ID via ApplicationStore
+                        if (meta.id) {
+                            const ApplicationStore = this.getStore("ApplicationStore");
+                            if (ApplicationStore) {
+                                const app = ApplicationStore.getApplication(meta.id);
+                                if (app && app.name) return app.name;
                             }
                         }
-                    }
 
-                    // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
-                    if (meta.id) {
-                        const PresenceStore = this.getStore("PresenceStore");
-                        if (PresenceStore) {
-                            const activities = PresenceStore.getActivities(userId) || [];
-                            for (const act of activities) {
-                                if (act && act.applicationId === meta.id && act.name) {
-                                    return act.name;
+                        // 4. Resolve by application ID via PresenceStore fallback (ensures we match the exact streamed game)
+                        if (meta.id) {
+                            const PresenceStore = this.getStore("PresenceStore");
+                            if (PresenceStore) {
+                                const activities = PresenceStore.getActivities(userId) || [];
+                                for (const act of activities) {
+                                    if (act && act.applicationId === meta.id && act.name) {
+                                        return act.name;
+                                    }
                                 }
                             }
                         }
                     }
+                } else {
+                    this.sendEvent({
+                        type: "debug_log",
+                        message: `No active stream found for user ${userId} via getAnyStreamForUser`
+                    });
                 }
             }
         } catch (e) {
-            console.error("[AccessibleDiscord] Error getting stream metadata:", e);
+            this.sendEvent({
+                type: "debug_log",
+                message: `Error in getStreamTarget: ${e.message}`
+            });
         }
 
         return "";
@@ -351,15 +390,13 @@ module.exports = class AccessibleDiscord {
             const oldStream = oldState ? (oldState.selfStream || false) : false;
             const newStream = event.selfStream || false;
             if (newStream) {
-                setTimeout(() => {
-                    const streamTarget = this.getStreamTarget(event.userId);
-                    this.sendEvent({
-                        type: "stream_status",
-                        user: userName,
-                        state: "started",
-                        target: streamTarget
-                    });
-                }, 1500);
+                const streamTarget = this.getStreamTarget(event.userId);
+                this.sendEvent({
+                    type: "stream_status",
+                    user: userName,
+                    state: "started",
+                    target: streamTarget
+                });
             }
         }
         else if (oldState !== undefined && oldState.channelId === myChannelId && event.channelId !== myChannelId) {
@@ -404,15 +441,13 @@ module.exports = class AccessibleDiscord {
             const newStream = event.selfStream || false;
             if (oldStream !== newStream) {
                 if (newStream) {
-                    setTimeout(() => {
-                        const streamTarget = this.getStreamTarget(event.userId);
-                        this.sendEvent({
-                            type: "stream_status",
-                            user: userName,
-                            state: "started",
-                            target: streamTarget
-                        });
-                    }, 1500);
+                    const streamTarget = this.getStreamTarget(event.userId);
+                    this.sendEvent({
+                        type: "stream_status",
+                        user: userName,
+                        state: "started",
+                        target: streamTarget
+                    });
                 } else {
                     this.sendEvent({
                         type: "stream_status",
