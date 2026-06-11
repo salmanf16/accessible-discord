@@ -1,0 +1,103 @@
+# NVDA Accessible Discord Addon - ar
+# This file is distributed under the same license as the accessibleDiscord package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: accessibleDiscord 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-11 00:00+0000\n"
+"PO-Revision-Date: 2026-06-11 00:00+0000\n"
+"Last-Translator: salmanf16\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Accessible Discord"
+msgstr "Accessible Discord"
+
+msgid "Announce headset deafen/undeafen status changes"
+msgstr "نطق تعطيل وتفعيل سمع الأعضاء"
+
+msgid "Announce incoming text messages in the active channel"
+msgstr "نطق الرسائل النصية الواردة بالقناة النشطة"
+
+msgid "Announce microphone mute/unmute status changes"
+msgstr "نطق كتم وإلغاء كتم ميكروفون الأعضاء"
+
+msgid "Announce when members join a voice channel"
+msgstr "نطق انضمام الأعضاء للقناة الصوتية"
+
+msgid "Announce when members leave a voice channel"
+msgstr "نطق مغادرة الأعضاء للقناة الصوتية"
+
+msgid "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window."
+msgstr "تم تحميل مثبت BetterDiscord بنجاح وفتحه. يرجى إكمال التثبيت من النافذة المفتوحة."
+
+msgid "Calculating..."
+msgstr "جاري الحساب..."
+
+msgid "Connecting to server..."
+msgstr "جاري الاتصال بالخادم..."
+
+msgid "Download failed, retry"
+msgstr "فشل التحميل، اضغط لإعادة المحاولة"
+
+msgid "Downloaded {downloaded} KB"
+msgstr "تم تحميل {downloaded} ك.ب"
+
+msgid "Downloaded {downloaded} KB of {total} KB ({percent}%)\nTime remaining: {remaining}"
+msgstr "تم تحميل {downloaded} ك.ب من أصل {total} ك.ب ({percent}%)\nالوقت المتبقي: {remaining}"
+
+msgid "Downloading BetterDiscord"
+msgstr "تحميل BetterDiscord"
+
+msgid "Downloading BetterDiscord installer, please wait..."
+msgstr "جاري تحميل مثبت BetterDiscord المساعد، يرجى الانتظار..."
+
+msgid "Downloading..."
+msgstr "جاري التحميل..."
+
+msgid "Failed to download BetterDiscord: {error}"
+msgstr "فشل تحميل BetterDiscord: {error}"
+
+msgid "Install BetterDiscord (automatic)"
+msgstr "تثبيت BetterDiscord (تلقائي)"
+
+msgid "New message from {user}: {content}"
+msgstr "رسالة جديدة من {user}: {content}"
+
+msgid "deafened"
+msgstr "عطل السمع"
+
+msgid "muted"
+msgstr "كتم الصوت"
+
+msgid "undeafened"
+msgstr "فعل السمع"
+
+msgid "unmuted"
+msgstr "ألغى كتم الصوت"
+
+msgid "{minutes} min and {seconds} sec"
+msgstr "{minutes} دقيقة و {seconds} ثانية"
+
+msgid "{seconds} sec"
+msgstr "{seconds} ثانية"
+
+msgid "{user} joined"
+msgstr "{user} انضم للقناة"
+
+msgid "{user} joined voice channel {channel}"
+msgstr "{user} انضم إلى القناة الصوتية {channel}"
+
+msgid "{user} left"
+msgstr "{user} غادر القناة"
+
+msgid "{user} left voice channel {channel}"
+msgstr "{user} غادر القناة الصوتية {channel}"
+
+msgid "{user} {state}"
+msgstr "{user} {state}"
+
