@@ -192,24 +192,6 @@ module.exports = class AccessibleDiscord {
             console.error("[AccessibleDiscord] Error getting stream metadata:", e);
         }
 
-        // Fallback to PresenceStore game activity
-        try {
-            const PresenceStore = this.getStore("PresenceStore");
-            if (PresenceStore) {
-                const activities = PresenceStore.getActivities(userId) || [];
-                for (const act of activities) {
-                    if (act && (act.type === 0 || act.type === 1)) {
-                        const name = act.name;
-                        if (name && name.toLowerCase() !== "spotify") {
-                            return name;
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("[AccessibleDiscord] Error getting presence activity:", e);
-        }
-
         return "";
     }
 
