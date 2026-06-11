@@ -50,6 +50,45 @@ msgstr "Calcul en cours..."
 msgid "Connecting to server..."
 msgstr "Connexion au serveur..."
 
+msgid "Custom"
+msgstr "Personnalisé"
+
+msgid "Custom deafened template:"
+msgstr "Modèle de sourdine de casque personnalisé:"
+
+msgid "Custom incoming message template:"
+msgstr "Modèle de message texte entrant personnalisé:"
+
+msgid "Custom join message template:"
+msgstr "Modèle de message de jointure personnalisé:"
+
+msgid "Custom leave message template:"
+msgstr "Modèle de message de départ personnalisé:"
+
+msgid "Custom muted template:"
+msgstr "Modèle muet personnalisé:"
+
+msgid "Custom streaming started template:"
+msgstr "Modèle de début de diffusion personnalisé:"
+
+msgid "Custom streaming stopped template:"
+msgstr "Modèle de fin de diffusion personnalisé:"
+
+msgid "Custom undeafened template:"
+msgstr "Modèle de sourdine de casque désactivée personnalisé:"
+
+msgid "Custom unmuted template:"
+msgstr "Modèle non muet personnalisé:"
+
+msgid "Custom user joined stream template:"
+msgstr "Modèle de membre rejoint votre diffusion personnalisé:"
+
+msgid "Custom user left stream template:"
+msgstr "Modèle de membre quitté votre diffusion personnalisé:"
+
+msgid "Default"
+msgstr "Par défaut"
+
 msgid "Download failed, retry"
 msgstr "Le téléchargement a échoué, réessayez"
 
@@ -73,6 +112,9 @@ msgstr "Échec du téléchargement de BetterDiscord : {error}"
 
 msgid "Install BetterDiscord"
 msgstr "Installer BetterDiscord"
+
+msgid "Template mode:"
+msgstr "Mode modèle:"
 
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} min et {seconds} sec"

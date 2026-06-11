@@ -27,6 +27,7 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         return False
 
     def makeSettings(self, settingsSizer):
+        self._feature_groups = []
         helper = gui.guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
         if server.NVDAEventRequestHandler.plugin_instance:
             server.NVDAEventRequestHandler.plugin_instance.deploy_bd_plugin()
@@ -36,26 +37,106 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
             self.install_bd_btn.Bind(wx.EVT_BUTTON, self.on_install_bd)
             settingsSizer.Add(self.install_bd_btn, 0, wx.ALL | wx.EXPAND | wx.BOTTOM, 15)
 
-        self.speak_join_cb = helper.addItem(wx.CheckBox(self, label=_("Announce when members join a voice channel")))
-        self.speak_join_cb.SetValue(config.conf["accessibleDiscord"]["speak_join"])
+        self.addFeatureGroup(helper, _("Announce when members join a voice channel"), "speak_join", "custom_join", [
+            ("msg_join", "%u joined %c", _("Custom join message template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce when members leave a voice channel"), "speak_leave", "custom_leave", [
+            ("msg_leave", "%u left %c", _("Custom leave message template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce microphone mute/unmute status changes"), "speak_mute", "custom_mute", [
+            ("msg_mute_muted", "%u %s", _("Custom muted template:")),
+            ("msg_mute_unmuted", "%u %s", _("Custom unmuted template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce headset deafen/undeafen status changes"), "speak_deafen", "custom_deafen", [
+            ("msg_deafen_deafened", "%u %s", _("Custom deafened template:")),
+            ("msg_deafen_undeafened", "%u %s", _("Custom undeafened template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce when members start or stop streaming"), "speak_stream_status", "custom_stream_status", [
+            ("msg_stream_started", "%u started streaming", _("Custom streaming started template:")),
+            ("msg_stream_stopped", "%u stopped streaming", _("Custom streaming stopped template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce when members join or leave your stream"), "speak_stream_viewer", "custom_stream_viewer", [
+            ("msg_stream_join", "%u joined your stream", _("Custom user joined stream template:")),
+            ("msg_stream_leave", "%u left your stream", _("Custom user left stream template:"))
+        ])
+        
+        self.addFeatureGroup(helper, _("Announce incoming text messages in the active channel"), "speak_message", "custom_message", [
+            ("msg_message", "New message from %u: %m", _("Custom incoming message template:"))
+        ])
 
-        self.speak_leave_cb = helper.addItem(wx.CheckBox(self, label=_("Announce when members leave a voice channel")))
-        self.speak_leave_cb.SetValue(config.conf["accessibleDiscord"]["speak_leave"])
-
-        self.speak_mute_cb = helper.addItem(wx.CheckBox(self, label=_("Announce microphone mute/unmute status changes")))
-        self.speak_mute_cb.SetValue(config.conf["accessibleDiscord"]["speak_mute"])
-
-        self.speak_deafen_cb = helper.addItem(wx.CheckBox(self, label=_("Announce headset deafen/undeafen status changes")))
-        self.speak_deafen_cb.SetValue(config.conf["accessibleDiscord"]["speak_deafen"])
-
-        self.speak_stream_status_cb = helper.addItem(wx.CheckBox(self, label=_("Announce when members start or stop streaming")))
-        self.speak_stream_status_cb.SetValue(config.conf["accessibleDiscord"]["speak_stream_status"])
-
-        self.speak_stream_viewer_cb = helper.addItem(wx.CheckBox(self, label=_("Announce when members join or leave your stream")))
-        self.speak_stream_viewer_cb.SetValue(config.conf["accessibleDiscord"]["speak_stream_viewer"])
-
-        self.speak_message_cb = helper.addItem(wx.CheckBox(self, label=_("Announce incoming text messages in the active channel")))
-        self.speak_message_cb.SetValue(config.conf["accessibleDiscord"]["speak_message"])
+    def addFeatureGroup(self, helper, group_label, speak_key, custom_key, templates):
+        # 1. Main CheckBox
+        cb = wx.CheckBox(self, label=group_label)
+        cb.SetValue(config.conf["accessibleDiscord"][speak_key])
+        helper.addItem(cb)
+        
+        # 2. Choice control (Default/Custom) - Always visible, enabled/disabled based on speak_key
+        choice_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        choice_label = wx.StaticText(self, label=_("Template mode:"))
+        choice = wx.Choice(self, choices=[_("Default"), _("Custom")])
+        is_custom = config.conf["accessibleDiscord"][custom_key]
+        choice.SetSelection(1 if is_custom else 0)
+        
+        choice_sizer.Add(choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        choice_sizer.Add(choice, 0, wx.ALIGN_CENTER_VERTICAL)
+        helper.sizer.Add(choice_sizer, 0, wx.LEFT | wx.BOTTOM, 15)
+        
+        # 3. Create text controls for each template
+        text_controls = []
+        for config_key, default_val, label_text in templates:
+            lbl = wx.StaticText(self, label=label_text)
+            txt = wx.TextCtrl(self, value=config.conf["accessibleDiscord"][config_key] or default_val)
+            
+            helper.sizer.Add(lbl, 0, wx.LEFT | wx.BOTTOM, 10)
+            helper.sizer.Add(txt, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 15)
+            
+            text_controls.append((config_key, default_val, lbl, txt))
+            
+        def update_visibility():
+            active = cb.GetValue()
+            custom_mode = (choice.GetSelection() == 1)
+            
+            # Choice is always visible, just enabled/disabled
+            choice_label.Enable(active)
+            choice.Enable(active)
+            
+            # Hide/show text controls
+            show_text = active and custom_mode
+            for config_key, default_val, lbl, txt in text_controls:
+                lbl.Show(show_text)
+                txt.Show(show_text)
+                helper.sizer.Show(lbl, show_text)
+                helper.sizer.Show(txt, show_text)
+                
+            if not custom_mode:
+                for config_key, default_val, lbl, txt in text_controls:
+                    txt.SetValue(default_val)
+                    
+            self.Layout()
+            # Update parent scrolled window scrollbars
+            parent = self.GetParent()
+            if parent:
+                parent.Layout()
+                if hasattr(parent, "SetupScrolling"):
+                    parent.SetupScrolling()
+            
+        cb.Bind(wx.EVT_CHECKBOX, lambda e: update_visibility())
+        choice.Bind(wx.EVT_CHOICE, lambda e: update_visibility())
+        
+        update_visibility()
+        
+        self._feature_groups.append({
+            "cb": cb,
+            "speak_key": speak_key,
+            "choice": choice,
+            "custom_key": custom_key,
+            "text_controls": [(tc[0], tc[1], tc[2], tc[3], None) for tc in text_controls]
+        })
 
     def on_install_bd(self, event):
         self.install_bd_btn.Disable()
@@ -137,10 +218,15 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
             wx.CallAfter(enable_btn)
 
     def onSave(self):
-        config.conf["accessibleDiscord"]["speak_join"] = self.speak_join_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_leave"] = self.speak_leave_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_mute"] = self.speak_mute_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_deafen"] = self.speak_deafen_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_stream_status"] = self.speak_stream_status_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_stream_viewer"] = self.speak_stream_viewer_cb.GetValue()
-        config.conf["accessibleDiscord"]["speak_message"] = self.speak_message_cb.GetValue()
+        for group in self._feature_groups:
+            speak_active = group["cb"].GetValue()
+            config.conf["accessibleDiscord"][group["speak_key"]] = speak_active
+            
+            custom_active = (group["choice"].GetSelection() == 1)
+            config.conf["accessibleDiscord"][group["custom_key"]] = custom_active
+            
+            for config_key, default_val, lbl, txt, txt_sizer in group["text_controls"]:
+                if custom_active:
+                    config.conf["accessibleDiscord"][config_key] = txt.GetValue()
+                else:
+                    config.conf["accessibleDiscord"][config_key] = ""

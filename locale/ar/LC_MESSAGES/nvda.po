@@ -50,6 +50,45 @@ msgstr "جاري الحساب..."
 msgid "Connecting to server..."
 msgstr "جاري الاتصال بالخادم..."
 
+msgid "Custom"
+msgstr "مخصص"
+
+msgid "Custom deafened template:"
+msgstr "قالب تعطيل السمع المخصص:"
+
+msgid "Custom incoming message template:"
+msgstr "قالب الرسالة الواردة المخصص:"
+
+msgid "Custom join message template:"
+msgstr "قالب رسالة الانضمام المخصص:"
+
+msgid "Custom leave message template:"
+msgstr "قالب رسالة المغادرة المخصص:"
+
+msgid "Custom muted template:"
+msgstr "قالب كتم الصوت المخصص:"
+
+msgid "Custom streaming started template:"
+msgstr "قالب بدء البث المخصص:"
+
+msgid "Custom streaming stopped template:"
+msgstr "قالب إيقاف البث المخصص:"
+
+msgid "Custom undeafened template:"
+msgstr "قالب تفعيل السمع المخصص:"
+
+msgid "Custom unmuted template:"
+msgstr "قالب إلغاء كتم الصوت المخصص:"
+
+msgid "Custom user joined stream template:"
+msgstr "قالب انضمام مستخدم لبثك مخصص:"
+
+msgid "Custom user left stream template:"
+msgstr "قالب مغادرة مستخدم لبثك مخصص:"
+
+msgid "Default"
+msgstr "الافتراضي"
+
 msgid "Download failed, retry"
 msgstr "فشل التحميل، اضغط لإعادة المحاولة"
 
@@ -73,6 +112,9 @@ msgstr "فشل تحميل BetterDiscord: {error}"
 
 msgid "Install BetterDiscord"
 msgstr "تثبيت BetterDiscord"
+
+msgid "Template mode:"
+msgstr "نمط القالب:"
 
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} دقيقة و {seconds} ثانية"

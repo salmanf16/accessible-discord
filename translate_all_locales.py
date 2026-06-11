@@ -49,8 +49,21 @@ AR_DICT = {
     "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window.": "تم تحميل مثبت BetterDiscord بنجاح وفتحه. يرجى إكمال التثبيت من النافذة المفتوحة.",
     "Failed to download BetterDiscord: {error}": "فشل تحميل BetterDiscord: {error}",
     "Download failed, retry": "فشل التحميل، اضغط لإعادة المحاولة",
-
-    "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "تم تثبيت ملحق ديسكورد المساعد تلقائياً بنجاح. يرجى تفعيله من إعدادات ديسكورد."
+    "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "تم تثبيت ملحق ديسكورد المساعد تلقائياً بنجاح. يرجى تفعيله من إعدادات ديسكورد.",
+    "Default": "الافتراضي",
+    "Custom": "مخصص",
+    "Template mode:": "نمط القالب:",
+    "Custom join message template:": "قالب رسالة الانضمام المخصص:",
+    "Custom leave message template:": "قالب رسالة المغادرة المخصص:",
+    "Custom muted template:": "قالب كتم الصوت المخصص:",
+    "Custom unmuted template:": "قالب إلغاء كتم الصوت المخصص:",
+    "Custom deafened template:": "قالب تعطيل السمع المخصص:",
+    "Custom undeafened template:": "قالب تفعيل السمع المخصص:",
+    "Custom streaming started template:": "قالب بدء البث المخصص:",
+    "Custom streaming stopped template:": "قالب إيقاف البث المخصص:",
+    "Custom user joined stream template:": "قالب انضمام مستخدم لبثك مخصص:",
+    "Custom user left stream template:": "قالب مغادرة مستخدم لبثك مخصص:",
+    "Custom incoming message template:": "قالب الرسالة الواردة المخصص:"
 }
 
 FR_DICT = {
@@ -75,8 +88,21 @@ FR_DICT = {
     "BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window.": "L'installateur BetterDiscord a été téléchargé et ouvert avec succès. Veuillez terminer l'installation dans la fenêtre ouverte.",
     "Failed to download BetterDiscord: {error}": "Échec du téléchargement de BetterDiscord : {error}",
     "Download failed, retry": "Le téléchargement a échoué, réessayez",
-
-    "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "L'extension compagnon BetterDiscord a été copiée automatiquement. Veuillez l'activer dans les paramètres de Discord."
+    "BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.": "L'extension compagnon BetterDiscord a été copiée automatiquement. Veuillez l'activer dans les paramètres de Discord.",
+    "Default": "Par défaut",
+    "Custom": "Personnalisé",
+    "Template mode:": "Mode modèle:",
+    "Custom join message template:": "Modèle de message de jointure personnalisé:",
+    "Custom leave message template:": "Modèle de message de départ personnalisé:",
+    "Custom muted template:": "Modèle muet personnalisé:",
+    "Custom unmuted template:": "Modèle non muet personnalisé:",
+    "Custom deafened template:": "Modèle de sourdine de casque personnalisé:",
+    "Custom undeafened template:": "Modèle de sourdine de casque désactivée personnalisé:",
+    "Custom streaming started template:": "Modèle de début de diffusion personnalisé:",
+    "Custom streaming stopped template:": "Modèle de fin de diffusion personnalisé:",
+    "Custom user joined stream template:": "Modèle de membre rejoint votre diffusion personnalisé:",
+    "Custom user left stream template:": "Modèle de membre quitté votre diffusion personnalisé:",
+    "Custom incoming message template:": "Modèle de message texte entrant personnalisé:"
 }
 
 LOCAL_DICTS = {
@@ -337,11 +363,15 @@ def clean_and_translate_locales():
         # Load existing translations
         existing = parse_po_file(po_path)
         
-        # Keep only code strings or header
+        # Keep only code strings or header, overriding with local verified dictionary if available
         cleaned = {}
+        local_dict = LOCAL_DICTS.get(lang, {})
         for k, v in existing.items():
             if k in code_strings or k == "":
-                cleaned[k] = v
+                if k in local_dict:
+                    cleaned[k] = local_dict[k]
+                else:
+                    cleaned[k] = v
                 
         # Find missing strings
         missing = sorted(list(code_strings - set(cleaned.keys())))
