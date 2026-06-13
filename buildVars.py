@@ -5,6 +5,8 @@ addon_info = {
     "addon_summary": "Accessible Discord",
     "addon_description": "Announces voice channel events (join, leave, mute, deafen) and chat messages in Discord using a BetterDiscord companion plugin.",
     "addon_changelog": (
+        "- Added configurable setting to toggle speech interruption for new announcements.\n"
+        "- Cleaned up redundant loading warnings in NVDA logs by renaming internal modules with leading underscores.\n"
         "- Added customizable announcement templates for all features using simple shortcodes (%u, %c, %m, %s, %t).\n"
         "- Fixed a bug where streaming general application windows or Chrome would falsely announce background games.\n"
         "- Refactored the NVDA addon into a modular package structure for better organization and performance.\n"

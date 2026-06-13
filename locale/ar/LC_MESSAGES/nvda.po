@@ -113,6 +113,9 @@ msgstr "فشل تحميل BetterDiscord: {error}"
 msgid "Install BetterDiscord"
 msgstr "تثبيت BetterDiscord"
 
+msgid "Interrupt speech for new announcements"
+msgstr "مقاطعة الناطق عند ورود تنبيهات جديدة"
+
 msgid "Template mode:"
 msgstr "نمط القالب:"
 

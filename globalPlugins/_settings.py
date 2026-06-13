@@ -15,7 +15,7 @@ addonHandler.initTranslation()
 
 from gui import settingsDialogs
 import gui.guiHelper
-from . import server
+from . import _server as server
 
 class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
     title = _("Accessible Discord")
@@ -36,6 +36,10 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
             self.install_bd_btn = wx.Button(self, label=label)
             self.install_bd_btn.Bind(wx.EVT_BUTTON, self.on_install_bd)
             settingsSizer.Add(self.install_bd_btn, 0, wx.ALL | wx.EXPAND | wx.BOTTOM, 15)
+
+        self.interrupt_speech_cb = wx.CheckBox(self, label=_("Interrupt speech for new announcements"))
+        self.interrupt_speech_cb.SetValue(config.conf["accessibleDiscord"].get("interrupt_speech", True))
+        helper.addItem(self.interrupt_speech_cb)
 
         self.addFeatureGroup(helper, _("Announce when members join a voice channel"), "speak_join", "custom_join", [
             ("msg_join", "%u joined %c", _("Custom join message template:"))
@@ -218,6 +222,7 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
             wx.CallAfter(enable_btn)
 
     def onSave(self):
+        config.conf["accessibleDiscord"]["interrupt_speech"] = self.interrupt_speech_cb.GetValue()
         for group in self._feature_groups:
             speak_active = group["cb"].GetValue()
             config.conf["accessibleDiscord"][group["speak_key"]] = speak_active

@@ -113,6 +113,9 @@ msgstr "Échec du téléchargement de BetterDiscord : {error}"
 msgid "Install BetterDiscord"
 msgstr "Installer BetterDiscord"
 
+msgid "Interrupt speech for new announcements"
+msgstr "Interrompre la parole pour les nouvelles annonces"
+
 msgid "Template mode:"
 msgstr "Mode modèle:"
 

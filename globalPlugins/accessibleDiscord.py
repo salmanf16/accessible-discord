@@ -15,8 +15,8 @@ import logHandler
 logHandler.log.info("Accessible Discord global plugin package loading")
 addonHandler.initTranslation()
 
-from . import settings
-from . import server
+from . import _settings as settings
+from . import _server as server
 
 confspec = {
     "speak_join": "boolean(default=True)",
@@ -50,6 +50,7 @@ confspec = {
     "speak_message": "boolean(default=True)",
     "custom_message": "boolean(default=False)",
     "msg_message": "string(default='')",
+    "interrupt_speech": "boolean(default=True)",
 }
 config.conf.spec["accessibleDiscord"] = confspec
 
@@ -263,5 +264,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 msg = "New message from {user}: {content}".format(user=user, content=content)
 
         if msg:
-            speech.cancelSpeech()
+            if conf.get("interrupt_speech", True):
+                speech.cancelSpeech()
             speech.speakText(msg)

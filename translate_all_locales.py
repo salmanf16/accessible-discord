@@ -63,7 +63,8 @@ AR_DICT = {
     "Custom streaming stopped template:": "قالب إيقاف البث المخصص:",
     "Custom user joined stream template:": "قالب انضمام مستخدم لبثك مخصص:",
     "Custom user left stream template:": "قالب مغادرة مستخدم لبثك مخصص:",
-    "Custom incoming message template:": "قالب الرسالة الواردة المخصص:"
+    "Custom incoming message template:": "قالب الرسالة الواردة المخصص:",
+    "Interrupt speech for new announcements": "مقاطعة الناطق عند ورود تنبيهات جديدة"
 }
 
 FR_DICT = {
@@ -102,7 +103,8 @@ FR_DICT = {
     "Custom streaming stopped template:": "Modèle de fin de diffusion personnalisé:",
     "Custom user joined stream template:": "Modèle de membre rejoint votre diffusion personnalisé:",
     "Custom user left stream template:": "Modèle de membre quitté votre diffusion personnalisé:",
-    "Custom incoming message template:": "Modèle de message texte entrant personnalisé:"
+    "Custom incoming message template:": "Modèle de message texte entrant personnalisé:",
+    "Interrupt speech for new announcements": "Interrompre la parole pour les nouvelles annonces"
 }
 
 LOCAL_DICTS = {
