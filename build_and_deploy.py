@@ -82,7 +82,7 @@ def copy_to_installed():
         gp_dir = os.path.join(INSTALL_DIR, "globalPlugins")
         if os.path.exists(gp_dir):
             for item in os.listdir(gp_dir):
-                if item in ("_accessibleDiscord_server.py", "_accessibleDiscord_settings.py", "accessible_discord.py", "accessible_discord"):
+                if item in ("_accessibleDiscord_server.py", "_accessibleDiscord_settings.py", "accessible_discord.py", "accessible_discord", "server.py", "settings.py"):
                     path = os.path.join(gp_dir, item)
                     try:
                         if os.path.isdir(path):
