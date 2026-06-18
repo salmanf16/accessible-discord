@@ -64,7 +64,8 @@ AR_DICT = {
     "Custom user joined stream template:": "قالب انضمام مستخدم لبثك مخصص:",
     "Custom user left stream template:": "قالب مغادرة مستخدم لبثك مخصص:",
     "Custom incoming message template:": "قالب الرسالة الواردة المخصص:",
-    "Interrupt speech for new announcements": "مقاطعة الناطق عند ورود تنبيهات جديدة"
+    "Interrupt speech for new announcements": "مقاطعة الناطق عند ورود تنبيهات جديدة",
+    "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it.": "تنبيه: BetterDiscord غير نشط في تطبيق ديسكورد الخاص بك. يرجى فتح إعدادات Accessible Discord لتثبيته أو تحديثه."
 }
 
 FR_DICT = {
@@ -104,7 +105,8 @@ FR_DICT = {
     "Custom user joined stream template:": "Modèle de membre rejoint votre diffusion personnalisé:",
     "Custom user left stream template:": "Modèle de membre quitté votre diffusion personnalisé:",
     "Custom incoming message template:": "Modèle de message texte entrant personnalisé:",
-    "Interrupt speech for new announcements": "Interrompre la parole pour les nouvelles annonces"
+    "Interrupt speech for new announcements": "Interrompre la parole pour les nouvelles annonces",
+    "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it.": "Avertissement : BetterDiscord n'est pas actif dans votre client Discord. Veuillez ouvrir les paramètres d'Accessible Discord pour l'installer ou le mettre à jour."
 }
 
 LOCAL_DICTS = {

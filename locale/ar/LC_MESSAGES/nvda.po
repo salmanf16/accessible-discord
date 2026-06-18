@@ -119,6 +119,9 @@ msgstr "مقاطعة الناطق عند ورود تنبيهات جديدة"
 msgid "Template mode:"
 msgstr "نمط القالب:"
 
+msgid "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it."
+msgstr "تنبيه: BetterDiscord غير نشط في تطبيق ديسكورد الخاص بك. يرجى فتح إعدادات Accessible Discord لتثبيته أو تحديثه."
+
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} دقيقة و {seconds} ثانية"
 

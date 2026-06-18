@@ -76,6 +76,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self.start_server()
         self.deploy_bd_plugin()
         threading.Thread(target=self.monitor_and_deploy_bd, daemon=True).start()
+        
+        # Check if BetterDiscord is active in the latest Discord installation
+        bd_status = settings.check_bd_injection()
+        if bd_status is False:
+            def speak_warning():
+                import time
+                time.sleep(2.0)
+                msg = _("Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it.")
+                speech.speakText(msg)
+            threading.Thread(target=speak_warning, daemon=True).start()
 
     def terminate(self):
         try:

@@ -119,6 +119,9 @@ msgstr "Interrompre la parole pour les nouvelles annonces"
 msgid "Template mode:"
 msgstr "Mode modèle:"
 
+msgid "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it."
+msgstr "Avertissement : BetterDiscord n'est pas actif dans votre client Discord. Veuillez ouvrir les paramètres d'Accessible Discord pour l'installer ou le mettre à jour."
+
 msgid "{minutes} min and {seconds} sec"
 msgstr "{minutes} min et {seconds} sec"
 

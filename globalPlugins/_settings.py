@@ -17,14 +17,57 @@ from gui import settingsDialogs
 import gui.guiHelper
 from . import _server as server
 
+def check_bd_injection():
+    localappdata = os.environ.get("LOCALAPPDATA")
+    if not localappdata:
+        return None
+    
+    discord_channels = ["Discord", "DiscordPTB", "DiscordCanary", "DiscordDevelopment"]
+    discord_installed = False
+    bd_injected = False
+    
+    for channel in discord_channels:
+        channel_path = os.path.join(localappdata, channel)
+        if not os.path.isdir(channel_path):
+            continue
+        
+        app_dirs = []
+        try:
+            for name in os.listdir(channel_path):
+                if name.startswith("app-") and os.path.isdir(os.path.join(channel_path, name)):
+                    app_dirs.append(name)
+        except Exception:
+            continue
+            
+        if not app_dirs:
+            continue
+            
+        discord_installed = True
+        
+        def get_version_key(dir_name):
+            ver_part = dir_name[4:]
+            try:
+                return [int(x) for x in ver_part.split(".")]
+            except ValueError:
+                return [0]
+                
+        app_dirs.sort(key=get_version_key)
+        latest_app = app_dirs[-1]
+        
+        injection_file = os.path.join(channel_path, latest_app, "resources", "app", "index.js")
+        if os.path.exists(injection_file):
+            bd_injected = True
+            break
+            
+    if not discord_installed:
+        return None
+    return bd_injected
+
 class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
     title = _("Accessible Discord")
 
     def is_bd_installed(self):
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            return os.path.exists(os.path.join(appdata, "BetterDiscord", "plugins"))
-        return False
+        return check_bd_injection() is not False
 
     def makeSettings(self, settingsSizer):
         self._feature_groups = []
