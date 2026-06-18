@@ -54,9 +54,30 @@ def check_bd_injection():
         app_dirs.sort(key=get_version_key)
         latest_app = app_dirs[-1]
         
+        # Method 1: Legacy check (resources/app/index.js)
         injection_file = os.path.join(channel_path, latest_app, "resources", "app", "index.js")
         if os.path.exists(injection_file):
             bd_injected = True
+            break
+            
+        # Method 2: Modern check (modules/discord_desktop_core-*/discord_desktop_core/index.js)
+        modules_dir = os.path.join(channel_path, latest_app, "modules")
+        if os.path.isdir(modules_dir):
+            try:
+                for item in os.listdir(modules_dir):
+                    if item.startswith("discord_desktop_core-") and os.path.isdir(os.path.join(modules_dir, item)):
+                        core_index = os.path.join(modules_dir, item, "discord_desktop_core", "index.js")
+                        if os.path.exists(core_index):
+                            try:
+                                with open(core_index, "r", encoding="utf-8", errors="ignore") as f:
+                                    if "betterdiscord" in f.read().lower():
+                                        bd_injected = True
+                                        break
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+        if bd_injected:
             break
             
     if not discord_installed:

@@ -5,6 +5,7 @@ addon_info = {
     "addon_summary": "Accessible Discord",
     "addon_description": "Announces voice channel events (join, leave, mute, deafen) and chat messages in Discord using a BetterDiscord companion plugin.",
     "addon_changelog": (
+        "- Fixed a bug where BetterDiscord was not correctly detected in newer Discord clients due to changed injection paths.\n"
         "- Added automatic BetterDiscord injection status detection at startup, with a speech warning if it becomes disabled (e.g., after a Discord update).\n"
         "- Added configurable setting to toggle speech interruption for new announcements.\n"
         "- Cleaned up redundant loading warnings in NVDA logs by renaming internal modules with leading underscores.\n"
@@ -20,7 +21,7 @@ addon_info = {
     "addon_licenseURL": "https://www.gnu.org/licenses/gpl-3.0.txt",
     "addon_author": "salmanf16",
     "addon_url": "https://github.com/salmanf16/accessible-discord",
-    "addon_version": "1.0.3",
+    "addon_version": "1.0.4",
     "addon_minimumNVDAVersion": "2023.1",
     "addon_lastTestedNVDAVersion": "2026.1",
 }
