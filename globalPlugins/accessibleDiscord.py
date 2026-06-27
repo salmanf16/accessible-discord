@@ -266,8 +266,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         elif event_type == "message":
             if not conf["speak_message"]:
                 return
-            if len(content) > 100:
-                content = content[:97] + "..."
             if conf["custom_message"] and conf["msg_message"]:
                 msg = format_custom_message(conf["msg_message"], user=user, content=content)
             else:
