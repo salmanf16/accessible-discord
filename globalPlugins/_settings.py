@@ -224,12 +224,14 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         temp_dir = tempfile.gettempdir()
         installer_path = os.path.join(temp_dir, "BetterDiscord-Windows.exe")
         try:
+            import ssl
+            context = ssl._create_unverified_context()
             req = urllib.request.Request(
                 url,
                 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             )
             start_time = time.time()
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, context=context) as response:
                 total_size = int(response.headers.get('Content-Length', 0))
                 bytes_downloaded = 0
                 chunk_size = 65536
@@ -274,6 +276,7 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
                     self.install_bd_btn.SetLabel(_("Install BetterDiscord"))
             wx.CallAfter(reset_btn)
         except Exception as e:
+            logHandler.log.exception("Accessible Discord failed to download BetterDiscord installer")
             try:
                 wx.CallAfter(dialog.Destroy)
             except Exception:

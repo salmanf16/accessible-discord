@@ -31,6 +31,7 @@ class NVDAEventRequestHandler(BaseHTTPRequestHandler):
                 if NVDAEventRequestHandler.plugin_instance:
                     wx.CallAfter(NVDAEventRequestHandler.plugin_instance.handle_event, event)
             except Exception as e:
+                logHandler.log.exception("Accessible Discord server failed to handle event POST request")
                 self.send_response(500, str(e))
                 self.end_headers()
         else:

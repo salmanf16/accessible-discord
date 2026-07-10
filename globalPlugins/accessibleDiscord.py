@@ -144,7 +144,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     shutil.copy2(src_file, dest_file)
                     return True
                 except Exception:
-                    pass
+                    logHandler.log.exception("Accessible Discord failed to copy BetterDiscord plugin")
         return False
 
     def monitor_and_deploy_bd(self):
@@ -178,100 +178,103 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             wx.CallAfter(speech.speakText, msg)
                             break
                     except Exception:
-                        pass
+                        logHandler.log.exception("Accessible Discord failed to copy BetterDiscord plugin in monitoring thread")
             time.sleep(3)
 
     def handle_event(self, event):
-        logHandler.log.info(f"Accessible Discord received event: {event}")
-        event_type = event.get("type")
-        user = event.get("user", "")
-        channel = event.get("channel", "")
-        content = event.get("content", "")
-        state = event.get("state", "")
-        target = event.get("target", "")
+        try:
+            logHandler.log.info(f"Accessible Discord received event: {event}")
+            event_type = event.get("type")
+            user = event.get("user", "")
+            channel = event.get("channel", "")
+            content = event.get("content", "")
+            state = event.get("state", "")
+            target = event.get("target", "")
 
-        conf = config.conf["accessibleDiscord"]
-        msg = ""
+            conf = config.conf["accessibleDiscord"]
+            msg = ""
 
-        if event_type == "join":
-            if not conf["speak_join"]:
-                return
-            if conf["custom_join"] and conf["msg_join"]:
-                msg = format_custom_message(conf["msg_join"], user=user, channel=channel)
-            else:
-                if channel:
-                    msg = "{user} joined voice channel {channel}".format(user=user, channel=channel)
+            if event_type == "join":
+                if not conf["speak_join"]:
+                    return
+                if conf["custom_join"] and conf["msg_join"]:
+                    msg = format_custom_message(conf["msg_join"], user=user, channel=channel)
                 else:
-                    msg = "{user} joined".format(user=user)
-        elif event_type == "leave":
-            if not conf["speak_leave"]:
-                return
-            if conf["custom_leave"] and conf["msg_leave"]:
-                msg = format_custom_message(conf["msg_leave"], user=user, channel=channel)
-            else:
-                if channel:
-                    msg = "{user} left voice channel {channel}".format(user=user, channel=channel)
+                    if channel:
+                        msg = "{user} joined voice channel {channel}".format(user=user, channel=channel)
+                    else:
+                        msg = "{user} joined".format(user=user)
+            elif event_type == "leave":
+                if not conf["speak_leave"]:
+                    return
+                if conf["custom_leave"] and conf["msg_leave"]:
+                    msg = format_custom_message(conf["msg_leave"], user=user, channel=channel)
                 else:
-                    msg = "{user} left".format(user=user)
-        elif event_type == "mute":
-            if not conf["speak_mute"]:
-                return
-            state_str = "muted" if state == "muted" else "unmuted"
-            if conf["custom_mute"]:
-                custom_template = conf["msg_mute_muted"] if state == "muted" else conf["msg_mute_unmuted"]
-                if custom_template:
-                    msg = format_custom_message(custom_template, user=user, state=state_str)
+                    if channel:
+                        msg = "{user} left voice channel {channel}".format(user=user, channel=channel)
+                    else:
+                        msg = "{user} left".format(user=user)
+            elif event_type == "mute":
+                if not conf["speak_mute"]:
+                    return
+                state_str = "muted" if state == "muted" else "unmuted"
+                if conf["custom_mute"]:
+                    custom_template = conf["msg_mute_muted"] if state == "muted" else conf["msg_mute_unmuted"]
+                    if custom_template:
+                        msg = format_custom_message(custom_template, user=user, state=state_str)
+                    else:
+                        msg = "{user} {state}".format(user=user, state=state_str)
                 else:
                     msg = "{user} {state}".format(user=user, state=state_str)
-            else:
-                msg = "{user} {state}".format(user=user, state=state_str)
-        elif event_type == "deafen":
-            if not conf["speak_deafen"]:
-                return
-            state_str = "deafened" if state == "deafened" else "undeafened"
-            if conf["custom_deafen"]:
-                custom_template = conf["msg_deafen_deafened"] if state == "deafened" else conf["msg_deafen_undeafened"]
-                if custom_template:
-                    msg = format_custom_message(custom_template, user=user, state=state_str)
+            elif event_type == "deafen":
+                if not conf["speak_deafen"]:
+                    return
+                state_str = "deafened" if state == "deafened" else "undeafened"
+                if conf["custom_deafen"]:
+                    custom_template = conf["msg_deafen_deafened"] if state == "deafened" else conf["msg_deafen_undeafened"]
+                    if custom_template:
+                        msg = format_custom_message(custom_template, user=user, state=state_str)
+                    else:
+                        msg = "{user} {state}".format(user=user, state=state_str)
                 else:
                     msg = "{user} {state}".format(user=user, state=state_str)
-            else:
-                msg = "{user} {state}".format(user=user, state=state_str)
-        elif event_type == "stream_status":
-            if not conf["speak_stream_status"]:
-                return
-            is_started = (state == "started")
-            if conf["custom_stream_status"]:
-                custom_template = conf["msg_stream_started"] if is_started else conf["msg_stream_stopped"]
-                if custom_template:
-                    msg = format_custom_message(custom_template, user=user, target=target)
+            elif event_type == "stream_status":
+                if not conf["speak_stream_status"]:
+                    return
+                is_started = (state == "started")
+                if conf["custom_stream_status"]:
+                    custom_template = conf["msg_stream_started"] if is_started else conf["msg_stream_stopped"]
+                    if custom_template:
+                        msg = format_custom_message(custom_template, user=user, target=target)
+                    else:
+                        msg = "{user} started streaming".format(user=user) if is_started else "{user} stopped streaming".format(user=user)
                 else:
                     msg = "{user} started streaming".format(user=user) if is_started else "{user} stopped streaming".format(user=user)
-            else:
-                msg = "{user} started streaming".format(user=user) if is_started else "{user} stopped streaming".format(user=user)
-        elif event_type == "stream_join":
-            if not conf["speak_stream_viewer"]:
-                return
-            if conf["custom_stream_viewer"] and conf["msg_stream_join"]:
-                msg = format_custom_message(conf["msg_stream_join"], user=user)
-            else:
-                msg = "{user} joined your stream".format(user=user)
-        elif event_type == "stream_leave":
-            if not conf["speak_stream_viewer"]:
-                return
-            if conf["custom_stream_viewer"] and conf["msg_stream_leave"]:
-                msg = format_custom_message(conf["msg_stream_leave"], user=user)
-            else:
-                msg = "{user} left your stream".format(user=user)
-        elif event_type == "message":
-            if not conf["speak_message"]:
-                return
-            if conf["custom_message"] and conf["msg_message"]:
-                msg = format_custom_message(conf["msg_message"], user=user, content=content)
-            else:
-                msg = "New message from {user}: {content}".format(user=user, content=content)
+            elif event_type == "stream_join":
+                if not conf["speak_stream_viewer"]:
+                    return
+                if conf["custom_stream_viewer"] and conf["msg_stream_join"]:
+                    msg = format_custom_message(conf["msg_stream_join"], user=user)
+                else:
+                    msg = "{user} joined your stream".format(user=user)
+            elif event_type == "stream_leave":
+                if not conf["speak_stream_viewer"]:
+                    return
+                if conf["custom_stream_viewer"] and conf["msg_stream_leave"]:
+                    msg = format_custom_message(conf["msg_stream_leave"], user=user)
+                else:
+                    msg = "{user} left your stream".format(user=user)
+            elif event_type == "message":
+                if not conf["speak_message"]:
+                    return
+                if conf["custom_message"] and conf["msg_message"]:
+                    msg = format_custom_message(conf["msg_message"], user=user, content=content)
+                else:
+                    msg = "New message from {user}: {content}".format(user=user, content=content)
 
-        if msg:
-            if conf.get("interrupt_speech", True):
-                speech.cancelSpeech()
-            speech.speakText(msg)
+            if msg:
+                if conf.get("interrupt_speech", True):
+                    speech.cancelSpeech()
+                speech.speakText(msg)
+        except Exception:
+            logHandler.log.exception("Accessible Discord failed to handle event")

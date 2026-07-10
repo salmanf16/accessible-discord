@@ -30,10 +30,10 @@ def should_exclude(f, relative_path):
     f_lower = f.lower()
     if f_lower == "manifest.ini":
         return False
+    if relative_path == ".":
+        return True
     ext = os.path.splitext(f)[1].lower()
     if ext in EXCLUDE_EXTS or ext in (".ini", ".json", ".log", ".txt", ".md"):
-        return True
-    if relative_path == "." and ext == ".py":
         return True
     return False
 

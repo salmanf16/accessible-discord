@@ -5,6 +5,8 @@ addon_info = {
     "addon_summary": "Accessible Discord",
     "addon_description": "Announces voice channel events (join, leave, mute, deafen) and chat messages in Discord using a BetterDiscord companion plugin.",
     "addon_changelog": (
+        "- Bypassed SSL verification for the BetterDiscord installer download to resolve connection issues on older systems.\n"
+        "- Overhauled error handling and logging across the entire addon to record traceback details to the NVDA log.\n"
         "- Removed the message length truncation limit and left multi-line messages untouched for testing.\n"
         "- Fixed a bug where BetterDiscord was not correctly detected in newer Discord clients due to changed injection paths.\n"
         "- Added automatic BetterDiscord injection status detection at startup, with a speech warning if it becomes disabled (e.g., after a Discord update).\n"
@@ -22,7 +24,7 @@ addon_info = {
     "addon_licenseURL": "https://www.gnu.org/licenses/gpl-3.0.txt",
     "addon_author": "salmanf16",
     "addon_url": "https://github.com/salmanf16/accessible-discord",
-    "addon_version": "1.0.5",
+    "addon_version": "1.0.6",
     "addon_minimumNVDAVersion": "2023.1",
     "addon_lastTestedNVDAVersion": "2026.1",
 }
