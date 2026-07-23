@@ -101,6 +101,9 @@ msgstr "Téléchargé {downloaded} Ko sur {total} Ko ({percent}%)\nTemps restant
 msgid "Downloading BetterDiscord"
 msgstr "Téléchargement de BetterDiscord"
 
+msgid "Downloading BetterDiscord installer {version}, please wait..."
+msgstr "Téléchargement du programme d'installation de BetterDiscord {version}, veuillez patienter..."
+
 msgid "Downloading BetterDiscord installer, please wait..."
 msgstr "Téléchargement de l'installateur BetterDiscord, veuillez patienter..."
 

@@ -101,6 +101,9 @@ msgstr "تم تحميل {downloaded} ك.ب من أصل {total} ك.ب ({percent}%
 msgid "Downloading BetterDiscord"
 msgstr "تحميل BetterDiscord"
 
+msgid "Downloading BetterDiscord installer {version}, please wait..."
+msgstr "جارٍ تنزيل أداة تثبيت BetterDiscord {الإصدار}، برجاء الانتظار..."
+
 msgid "Downloading BetterDiscord installer, please wait..."
 msgstr "جاري تحميل مثبت BetterDiscord المساعد، يرجى الانتظار..."
 

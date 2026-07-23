@@ -19,6 +19,7 @@ from . import _server as server
 
 def check_bd_injection():
     localappdata = os.environ.get("LOCALAPPDATA")
+    appdata = os.environ.get("APPDATA")
     if not localappdata:
         return None
     
@@ -26,6 +27,8 @@ def check_bd_injection():
     discord_installed = False
     bd_injected = False
     
+    bd_asar_path = os.path.join(appdata, "BetterDiscord", "data", "betterdiscord.asar") if appdata else None
+
     for channel in discord_channels:
         channel_path = os.path.join(localappdata, channel)
         if not os.path.isdir(channel_path):
@@ -51,34 +54,40 @@ def check_bd_injection():
             except ValueError:
                 return [0]
                 
-        app_dirs.sort(key=get_version_key)
-        latest_app = app_dirs[-1]
+        app_dirs.sort(key=get_version_key, reverse=True)
         
-        # Method 1: Legacy check (resources/app/index.js)
-        injection_file = os.path.join(channel_path, latest_app, "resources", "app", "index.js")
-        if os.path.exists(injection_file):
-            bd_injected = True
-            break
-            
-        # Method 2: Modern check (modules/discord_desktop_core-*/discord_desktop_core/index.js)
-        modules_dir = os.path.join(channel_path, latest_app, "modules")
-        if os.path.isdir(modules_dir):
-            try:
-                for item in os.listdir(modules_dir):
-                    if item.startswith("discord_desktop_core-") and os.path.isdir(os.path.join(modules_dir, item)):
-                        core_index = os.path.join(modules_dir, item, "discord_desktop_core", "index.js")
-                        if os.path.exists(core_index):
-                            try:
-                                with open(core_index, "r", encoding="utf-8", errors="ignore") as f:
-                                    if "betterdiscord" in f.read().lower():
-                                        bd_injected = True
-                                        break
-                            except Exception:
-                                pass
-            except Exception:
-                pass
-        if bd_injected:
-            break
+        for app_dir in app_dirs:
+            # Method 1: Legacy check (resources/app/index.js)
+            injection_file = os.path.join(channel_path, app_dir, "resources", "app", "index.js")
+            if os.path.exists(injection_file):
+                bd_injected = True
+                
+            # Method 2: Modern check (modules/discord_desktop_core-*/discord_desktop_core/index.js)
+            modules_dir = os.path.join(channel_path, app_dir, "modules")
+            if os.path.isdir(modules_dir):
+                try:
+                    for item in os.listdir(modules_dir):
+                        if item.startswith("discord_desktop_core-") and os.path.isdir(os.path.join(modules_dir, item)):
+                            core_dir = os.path.join(modules_dir, item, "discord_desktop_core")
+                            core_index = os.path.join(core_dir, "index.js")
+                            if os.path.exists(core_index):
+                                try:
+                                    with open(core_index, "r", encoding="utf-8", errors="ignore") as f:
+                                        if "betterdiscord" in f.read().lower():
+                                            bd_injected = True
+                                except Exception:
+                                    pass
+                            elif bd_asar_path and os.path.exists(bd_asar_path):
+                                try:
+                                    escaped_asar = bd_asar_path.replace("\\", "\\\\")
+                                    content = f'require("{escaped_asar}");\nmodule.exports = require("./core.asar");\n'
+                                    with open(core_index, "w", encoding="utf-8") as f:
+                                        f.write(content)
+                                    bd_injected = True
+                                except Exception:
+                                    pass
+                except Exception:
+                    pass
             
     if not discord_installed:
         return None
@@ -219,13 +228,35 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         threading.Thread(target=self._download_and_run_bd, args=(dialog,), daemon=True).start()
 
     def _download_and_run_bd(self, dialog):
-        speech.speakText(_("Downloading BetterDiscord installer, please wait..."))
+        import json
+        import ssl
+        context = ssl._create_unverified_context()
         url = "https://github.com/BetterDiscord/Installer/releases/latest/download/BetterDiscord-Windows.exe"
+        version_str = ""
+        try:
+            api_url = "https://api.github.com/repos/BetterDiscord/Installer/releases/latest"
+            api_req = urllib.request.Request(
+                api_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            )
+            with urllib.request.urlopen(api_req, context=context, timeout=5) as api_resp:
+                api_data = json.loads(api_resp.read().decode('utf-8'))
+                version_str = api_data.get("tag_name", "")
+                for asset in api_data.get("assets", []):
+                    if asset.get("name", "").lower().endswith(".exe"):
+                        url = asset.get("browser_download_url", url)
+                        break
+        except Exception:
+            pass
+
+        if version_str:
+            speech.speakText(_("Downloading BetterDiscord installer {version}, please wait...").format(version=version_str))
+        else:
+            speech.speakText(_("Downloading BetterDiscord installer, please wait..."))
+            
         temp_dir = tempfile.gettempdir()
         installer_path = os.path.join(temp_dir, "BetterDiscord-Windows.exe")
         try:
-            import ssl
-            context = ssl._create_unverified_context()
             req = urllib.request.Request(
                 url,
                 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}

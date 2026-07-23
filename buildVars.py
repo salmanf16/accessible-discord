@@ -5,26 +5,16 @@ addon_info = {
     "addon_summary": "Accessible Discord",
     "addon_description": "Announces voice channel events (join, leave, mute, deafen) and chat messages in Discord using a BetterDiscord companion plugin.",
     "addon_changelog": (
-        "- Bypassed SSL verification for the BetterDiscord installer download to resolve connection issues on older systems.\n"
-        "- Overhauled error handling and logging across the entire addon to record traceback details to the NVDA log.\n"
-        "- Removed the message length truncation limit and left multi-line messages untouched for testing.\n"
-        "- Fixed a bug where BetterDiscord was not correctly detected in newer Discord clients due to changed injection paths.\n"
-        "- Added automatic BetterDiscord injection status detection at startup, with a speech warning if it becomes disabled (e.g., after a Discord update).\n"
-        "- Added configurable setting to toggle speech interruption for new announcements.\n"
-        "- Cleaned up redundant loading warnings in NVDA logs by renaming internal modules with leading underscores.\n"
-        "- Added customizable announcement templates for all features using simple shortcodes (%u, %c, %m, %s, %t).\n"
-        "- Fixed a bug where streaming general application windows or Chrome would falsely announce background games.\n"
-        "- Refactored the NVDA addon into a modular package structure for better organization and performance.\n"
-        "- Added speech announcements when active voice channel members start/stop streaming (including game name if recognized).\n"
-        "- Added speech notifications when members join or leave your own stream.\n"
-        "- Added a dedicated Accessible Discord category in NVDA Settings dialog to easily configure all preferences.\n"
+        "- Fixed false join announcements when existing voice channel members mute or deafen.\n"
+        "- Enhanced BetterDiscord detection and auto-injection across all active Discord installation folders.\n"
+        "- Dynamically fetches the latest official BetterDiscord installer release from GitHub API.\n"
         "- Full localization support including Arabic and French translations."
     ),
     "addon_license": "GPL v3",
     "addon_licenseURL": "https://www.gnu.org/licenses/gpl-3.0.txt",
     "addon_author": "salmanf16",
     "addon_url": "https://github.com/salmanf16/accessible-discord",
-    "addon_version": "1.0.6",
+    "addon_version": "1.0.7",
     "addon_minimumNVDAVersion": "2023.1",
     "addon_lastTestedNVDAVersion": "2026.1",
 }

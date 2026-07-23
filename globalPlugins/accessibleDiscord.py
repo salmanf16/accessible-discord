@@ -247,9 +247,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if custom_template:
                         msg = format_custom_message(custom_template, user=user, target=target)
                     else:
-                        msg = "{user} started streaming".format(user=user) if is_started else "{user} stopped streaming".format(user=user)
+                        if is_started:
+                            msg = "{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user)
+                        else:
+                            msg = "{user} stopped streaming".format(user=user)
                 else:
-                    msg = "{user} started streaming".format(user=user) if is_started else "{user} stopped streaming".format(user=user)
+                    if is_started:
+                        msg = "{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user)
+                    else:
+                        msg = "{user} stopped streaming".format(user=user)
             elif event_type == "stream_join":
                 if not conf["speak_stream_viewer"]:
                     return
