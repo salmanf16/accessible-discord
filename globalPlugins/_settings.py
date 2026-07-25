@@ -228,42 +228,22 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         threading.Thread(target=self._download_and_run_bd, args=(dialog,), daemon=True).start()
 
     def _download_and_run_bd(self, dialog):
-        import json
-        import ssl
-        context = ssl._create_unverified_context()
+        speech.speakText(_("Downloading BetterDiscord installer, please wait..."))
         url = "https://github.com/BetterDiscord/Installer/releases/latest/download/BetterDiscord-Windows.exe"
-        version_str = ""
-        try:
-            api_url = "https://api.github.com/repos/BetterDiscord/Installer/releases/latest"
-            api_req = urllib.request.Request(
-                api_url,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-            )
-            with urllib.request.urlopen(api_req, context=context, timeout=5) as api_resp:
-                api_data = json.loads(api_resp.read().decode('utf-8'))
-                version_str = api_data.get("tag_name", "")
-                for asset in api_data.get("assets", []):
-                    if asset.get("name", "").lower().endswith(".exe"):
-                        url = asset.get("browser_download_url", url)
-                        break
-        except Exception:
-            pass
-
-        if version_str:
-            speech.speakText(_("Downloading BetterDiscord installer {version}, please wait...").format(version=version_str))
-        else:
-            speech.speakText(_("Downloading BetterDiscord installer, please wait..."))
-            
         temp_dir = tempfile.gettempdir()
         installer_path = os.path.join(temp_dir, "BetterDiscord-Windows.exe")
         try:
+            import ssl
+            context = ssl._create_unverified_context()
             req = urllib.request.Request(
                 url,
                 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             )
             start_time = time.time()
-            with urllib.request.urlopen(req, context=context) as response:
+            with urllib.request.urlopen(req, context=context, timeout=30) as response:
                 total_size = int(response.headers.get('Content-Length', 0))
+                if total_size <= 0:
+                    total_size = 78 * 1024 * 1024
                 bytes_downloaded = 0
                 chunk_size = 65536
                 with open(installer_path, 'wb') as out_file:
@@ -274,40 +254,41 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
                         out_file.write(chunk)
                         bytes_downloaded += len(chunk)
                         elapsed = time.time() - start_time
-                        if total_size > 0:
-                            percent = int((bytes_downloaded / total_size) * 100)
-                            if elapsed > 0.1:
-                                speed = bytes_downloaded / elapsed
-                                remaining_bytes = total_size - bytes_downloaded
-                                remaining_seconds = int(remaining_bytes / speed) if speed > 0 else 0
-                                rem_min = remaining_seconds // 60
-                                rem_sec = remaining_seconds % 60
-                                if rem_min > 0:
-                                    time_str = _("{minutes} min and {seconds} sec").format(minutes=rem_min, seconds=rem_sec)
-                                else:
-                                    time_str = _("{seconds} sec").format(seconds=remaining_seconds)
+                        percent = min(99, int((bytes_downloaded / total_size) * 100))
+                        if elapsed > 0.1:
+                            speed = bytes_downloaded / elapsed
+                            remaining_bytes = max(0, total_size - bytes_downloaded)
+                            remaining_seconds = int(remaining_bytes / speed) if speed > 0 else 0
+                            rem_min = remaining_seconds // 60
+                            rem_sec = remaining_seconds % 60
+                            if rem_min > 0:
+                                time_str = _("{minutes} min and {seconds} sec").format(minutes=rem_min, seconds=rem_sec)
                             else:
-                                time_str = _("Calculating...")
-                            msg = _("Downloaded {downloaded} KB of {total} KB ({percent}%)\nTime remaining: {remaining}").format(
-                                downloaded=bytes_downloaded // 1024,
-                                total=total_size // 1024,
-                                percent=percent,
-                                remaining=time_str
-                            )
-                            wx.CallAfter(dialog.Update, percent, msg)
+                                time_str = _("{seconds} sec").format(seconds=remaining_seconds)
                         else:
-                            msg = _("Downloaded {downloaded} KB").format(downloaded=bytes_downloaded // 1024)
-                            wx.CallAfter(dialog.Update, 0, msg)
+                            time_str = _("Calculating...")
+                        msg = _("Downloaded {downloaded} MB of {total} MB ({percent}%)\nTime remaining: {remaining}").format(
+                            downloaded=round(bytes_downloaded / (1024 * 1024), 1),
+                            total=round(total_size / (1024 * 1024), 1),
+                            percent=percent,
+                            remaining=time_str
+                        )
+                        wx.CallAfter(dialog.Update, percent, msg)
+                        
+            wx.CallAfter(dialog.Update, 100, _("Download complete!"))
             wx.CallAfter(dialog.Destroy)
             os.startfile(installer_path)
             speech.speakText(_("BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window."))
+        except Exception as e:
+            logHandler.log.exception("Accessible Discord failed to download BetterDiscord installer")
+            wx.CallAfter(dialog.Destroy)
+            speech.speakText(_("Failed to download BetterDiscord installer. Please check your internet connection or try again."))
+        finally:
             def reset_btn():
                 if hasattr(self, 'install_bd_btn') and self.install_bd_btn:
                     self.install_bd_btn.Enable()
                     self.install_bd_btn.SetLabel(_("Install BetterDiscord"))
             wx.CallAfter(reset_btn)
-        except Exception as e:
-            logHandler.log.exception("Accessible Discord failed to download BetterDiscord installer")
             try:
                 wx.CallAfter(dialog.Destroy)
             except Exception:

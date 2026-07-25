@@ -84,7 +84,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 import time
                 time.sleep(2.0)
                 msg = _("Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it.")
-                speech.speakText(msg)
+                wx.CallAfter(speech.speakText, msg)
             threading.Thread(target=speak_warning, daemon=True).start()
 
     def terminate(self):
@@ -98,7 +98,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def start_server(self):
         def run_server():
             try:
-                self.server_inst = HTTPServer(('127.0.0.1', 48321), server.NVDAEventRequestHandler)
+                self.server_inst = server.ThreadingHTTPServer(('127.0.0.1', 48321), server.NVDAEventRequestHandler)
                 self.server_inst.serve_forever()
             except Exception:
                 pass

@@ -10,6 +10,7 @@ module.exports = class AccessibleDiscord {
         this.lastVoiceStates = new Map();
         this.lastStreamViewers = new Set();
         this.streamCheckInterval = null;
+        this.myLastChannelId = null;
     }
 
     getStore(name) {
@@ -251,35 +252,7 @@ module.exports = class AccessibleDiscord {
         }
     }
 
-    syncChannelVoiceStates(channelId) {
-        if (!channelId) return;
-        try {
-            const VoiceStateStore = this.getStore("VoiceStateStore");
-            if (VoiceStateStore && VoiceStateStore.getVoiceStatesForChannel) {
-                const channelStates = VoiceStateStore.getVoiceStatesForChannel(channelId);
-                if (channelStates) {
-                    for (const userId in channelStates) {
-                        const vs = channelStates[userId];
-                        if (vs && !this.lastVoiceStates.has(userId)) {
-                            this.lastVoiceStates.set(userId, {
-                                channelId: vs.channelId,
-                                selfMute: vs.selfMute,
-                                selfDeaf: vs.selfDeaf,
-                                mute: vs.mute,
-                                deaf: vs.deaf,
-                                selfStream: vs.selfStream || false
-                            });
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("[AccessibleDiscord] Error syncing channel voice states:", e);
-        }
-    }
-
     handleVoiceStateUpdates(event) {
-        console.log("[AccessibleDiscord] handleVoiceStateUpdates event:", JSON.stringify(event));
         if (event && event.voiceStates) {
             for (const vs of event.voiceStates) {
                 this.handleVoiceStateUpdate(vs);
@@ -288,7 +261,6 @@ module.exports = class AccessibleDiscord {
     }
 
     handleVoiceStateUpdate(event) {
-        console.log("[AccessibleDiscord] handleVoiceStateUpdate event:", JSON.stringify(event));
         const UserStore = this.getStore("UserStore");
         const VoiceStateStore = this.getStore("VoiceStateStore");
         const ChannelStore = this.getStore("ChannelStore");
@@ -307,7 +279,10 @@ module.exports = class AccessibleDiscord {
             return;
         }
 
-        this.syncChannelVoiceStates(myChannelId);
+        if (event.userId === myUserId) {
+            this.checkStreamViewers();
+            return;
+        }
 
         const oldState = this.lastVoiceStates.get(event.userId);
         const newState = {
@@ -320,17 +295,13 @@ module.exports = class AccessibleDiscord {
         };
         this.lastVoiceStates.set(event.userId, newState);
 
-        if (event.userId === myUserId) {
-            this.checkStreamViewers();
-            return;
-        }
-
         const user = UserStore.getUser(event.userId);
         const userName = user ? (user.globalName || user.username) : "Unknown User";
 
         const oldChannelId = oldState ? oldState.channelId : (event.oldChannelId || null);
         const newChannelId = event.channelId;
 
+        // Direct Real-time Event 1: JOIN
         if (oldChannelId !== myChannelId && newChannelId === myChannelId) {
             const channel = ChannelStore.getChannel(myChannelId);
             const channelName = channel ? channel.name : "";
@@ -339,8 +310,7 @@ module.exports = class AccessibleDiscord {
                 user: userName,
                 channel: channelName
             });
-            const newStream = event.selfStream || false;
-            if (newStream) {
+            if (event.selfStream) {
                 const target = this.getStreamTarget(event.userId);
                 this.sendEvent({
                     type: "stream_status",
@@ -350,6 +320,7 @@ module.exports = class AccessibleDiscord {
                 });
             }
         }
+        // Direct Real-time Event 2: LEAVE
         else if (oldChannelId === myChannelId && newChannelId !== myChannelId) {
             const channel = ChannelStore.getChannel(myChannelId);
             const channelName = channel ? channel.name : "";
@@ -358,8 +329,7 @@ module.exports = class AccessibleDiscord {
                 user: userName,
                 channel: channelName
             });
-            const oldStream = oldState ? (oldState.selfStream || false) : false;
-            if (oldStream) {
+            if (oldState && oldState.selfStream) {
                 this.sendEvent({
                     type: "stream_status",
                     user: userName,
@@ -367,10 +337,11 @@ module.exports = class AccessibleDiscord {
                 });
             }
         }
+        // Direct Real-time Event 3: IN-CHANNEL ACTIONS (Mute / Deafen / Stream)
         else if (oldChannelId === myChannelId && newChannelId === myChannelId) {
             const oldMute = oldState ? (oldState.selfMute || oldState.mute) : false;
             const newMute = event.selfMute || event.mute;
-            if (oldMute !== newMute) {
+            if (oldState && oldMute !== newMute) {
                 this.sendEvent({
                     type: "mute",
                     user: userName,
@@ -380,7 +351,7 @@ module.exports = class AccessibleDiscord {
 
             const oldDeaf = oldState ? (oldState.selfDeaf || oldState.deaf) : false;
             const newDeaf = event.selfDeaf || event.deaf;
-            if (oldDeaf !== newDeaf) {
+            if (oldState && oldDeaf !== newDeaf) {
                 this.sendEvent({
                     type: "deafen",
                     user: userName,
@@ -390,7 +361,7 @@ module.exports = class AccessibleDiscord {
 
             const oldStream = oldState ? (oldState.selfStream || false) : false;
             const newStream = event.selfStream || false;
-            if (oldStream !== newStream) {
+            if (oldState && oldStream !== newStream) {
                 if (newStream) {
                     const target = this.getStreamTarget(event.userId);
                     this.sendEvent({
@@ -456,18 +427,21 @@ module.exports = class AccessibleDiscord {
             lang = "fr";
         }
         data.lang = lang;
-        console.log("[AccessibleDiscord] Sending event to NVDA addon:", JSON.stringify(data));
+
+        const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
 
         fetch("http://127.0.0.1:48321/event", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            signal: controller ? controller.signal : undefined
         }).then(response => {
-            console.log("[AccessibleDiscord] sendEvent response status:", response.status);
+            if (timeoutId) clearTimeout(timeoutId);
         }).catch(err => {
-            console.error("[AccessibleDiscord] sendEvent fetch failed:", err);
+            if (timeoutId) clearTimeout(timeoutId);
         });
     }
 };

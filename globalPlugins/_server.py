@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import wx
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import logHandler
 
 class NVDAEventRequestHandler(BaseHTTPRequestHandler):
