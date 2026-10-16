@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+import json
+import ssl
 import threading
 import urllib.request
 import tempfile
@@ -17,23 +19,39 @@ from gui import settingsDialogs
 import gui.guiHelper
 from . import _server as server
 
+
+def inject_bd_into_core(core_index, bd_asar_path):
+    if not bd_asar_path or not os.path.exists(bd_asar_path):
+        return False
+    try:
+        escaped_asar = bd_asar_path.replace("\\", "\\\\")
+        content = f'require("{escaped_asar}");\nmodule.exports = require("./core.asar");\n'
+        with open(core_index, "w", encoding="utf-8") as f:
+            f.write(content)
+        return True
+    except Exception:
+        logHandler.log.exception("Accessible Discord failed to auto-inject BetterDiscord into core index.js")
+        return False
+
+
 def check_bd_injection():
     localappdata = os.environ.get("LOCALAPPDATA")
     appdata = os.environ.get("APPDATA")
     if not localappdata:
         return None
-    
+
     discord_channels = ["Discord", "DiscordPTB", "DiscordCanary", "DiscordDevelopment"]
     discord_installed = False
     bd_injected = False
-    
+
     bd_asar_path = os.path.join(appdata, "BetterDiscord", "data", "betterdiscord.asar") if appdata else None
+    has_bd_asar = bool(bd_asar_path and os.path.exists(bd_asar_path))
 
     for channel in discord_channels:
         channel_path = os.path.join(localappdata, channel)
         if not os.path.isdir(channel_path):
             continue
-        
+
         app_dirs = []
         try:
             for name in os.listdir(channel_path):
@@ -41,74 +59,83 @@ def check_bd_injection():
                     app_dirs.append(name)
         except Exception:
             continue
-            
+
         if not app_dirs:
             continue
-            
+
         discord_installed = True
-        
+
         def get_version_key(dir_name):
             ver_part = dir_name[4:]
             try:
                 return [int(x) for x in ver_part.split(".")]
             except ValueError:
                 return [0]
-                
+
         app_dirs.sort(key=get_version_key, reverse=True)
-        
-        for app_dir in app_dirs:
-            # Method 1: Legacy check (resources/app/index.js)
-            injection_file = os.path.join(channel_path, app_dir, "resources", "app", "index.js")
-            if os.path.exists(injection_file):
-                bd_injected = True
-                
-            # Method 2: Modern check (modules/discord_desktop_core-*/discord_desktop_core/index.js)
-            modules_dir = os.path.join(channel_path, app_dir, "modules")
-            if os.path.isdir(modules_dir):
-                try:
-                    for item in os.listdir(modules_dir):
-                        if item.startswith("discord_desktop_core-") and os.path.isdir(os.path.join(modules_dir, item)):
-                            core_dir = os.path.join(modules_dir, item, "discord_desktop_core")
-                            core_index = os.path.join(core_dir, "index.js")
-                            if os.path.exists(core_index):
-                                try:
-                                    with open(core_index, "r", encoding="utf-8", errors="ignore") as f:
-                                        if "betterdiscord" in f.read().lower():
-                                            bd_injected = True
-                                except Exception:
-                                    pass
-                            elif bd_asar_path and os.path.exists(bd_asar_path):
-                                try:
-                                    escaped_asar = bd_asar_path.replace("\\", "\\\\")
-                                    content = f'require("{escaped_asar}");\nmodule.exports = require("./core.asar");\n'
-                                    with open(core_index, "w", encoding="utf-8") as f:
-                                        f.write(content)
-                                    bd_injected = True
-                                except Exception:
-                                    pass
-                except Exception:
-                    pass
-            
+        latest_app = app_dirs[0]
+
+        # Check the latest app directory first (what Discord actually runs)
+        channel_injected = False
+
+        # Method 1: Legacy check (resources/app/index.js)
+        injection_file = os.path.join(channel_path, latest_app, "resources", "app", "index.js")
+        if os.path.exists(injection_file) and has_bd_asar:
+            channel_injected = True
+
+        # Method 2: Modern check (modules/discord_desktop_core-*/discord_desktop_core/index.js)
+        modules_dir = os.path.join(channel_path, latest_app, "modules")
+        if os.path.isdir(modules_dir):
+            try:
+                core_items = [
+                    item for item in os.listdir(modules_dir)
+                    if item.startswith("discord_desktop_core-") and os.path.isdir(os.path.join(modules_dir, item))
+                ]
+                for item in core_items:
+                    core_dir = os.path.join(modules_dir, item, "discord_desktop_core")
+                    if not os.path.isdir(core_dir):
+                        continue
+                    core_index = os.path.join(core_dir, "index.js")
+                    already_has_bd = False
+                    if os.path.exists(core_index):
+                        try:
+                            with open(core_index, "r", encoding="utf-8", errors="ignore") as f:
+                                if "betterdiscord" in f.read().lower() and has_bd_asar:
+                                    already_has_bd = True
+                                    channel_injected = True
+                        except Exception:
+                            pass
+                    # Auto-repair injection if betterdiscord.asar exists on disk but Discord update overwrote index.js
+                    if not already_has_bd and has_bd_asar:
+                        if inject_bd_into_core(core_index, bd_asar_path):
+                            channel_injected = True
+            except Exception:
+                pass
+
+        if channel_injected:
+            bd_injected = True
+
     if not discord_installed:
         return None
     return bd_injected
+
 
 class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
     title = _("Accessible Discord")
 
     def is_bd_installed(self):
-        return check_bd_injection() is not False
+        return check_bd_injection() is True
 
     def makeSettings(self, settingsSizer):
         self._feature_groups = []
         helper = gui.guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
         if server.NVDAEventRequestHandler.plugin_instance:
             server.NVDAEventRequestHandler.plugin_instance.deploy_bd_plugin()
-        if not self.is_bd_installed():
-            label = _("Install BetterDiscord")
-            self.install_bd_btn = wx.Button(self, label=label)
-            self.install_bd_btn.Bind(wx.EVT_BUTTON, self.on_install_bd)
-            settingsSizer.Add(self.install_bd_btn, 0, wx.ALL | wx.EXPAND | wx.BOTTOM, 15)
+
+        btn_label = _("Update or Repair BetterDiscord") if self.is_bd_installed() else _("Install BetterDiscord")
+        self.install_bd_btn = wx.Button(self, label=btn_label)
+        self.install_bd_btn.Bind(wx.EVT_BUTTON, self.on_install_bd)
+        settingsSizer.Add(self.install_bd_btn, 0, wx.ALL | wx.EXPAND | wx.BOTTOM, 15)
 
         self.interrupt_speech_cb = wx.CheckBox(self, label=_("Interrupt speech for new announcements"))
         self.interrupt_speech_cb.SetValue(config.conf["accessibleDiscord"].get("interrupt_speech", True))
@@ -117,31 +144,31 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         self.addFeatureGroup(helper, _("Announce when members join a voice channel"), "speak_join", "custom_join", [
             ("msg_join", "%u joined %c", _("Custom join message template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce when members leave a voice channel"), "speak_leave", "custom_leave", [
             ("msg_leave", "%u left %c", _("Custom leave message template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce microphone mute/unmute status changes"), "speak_mute", "custom_mute", [
             ("msg_mute_muted", "%u %s", _("Custom muted template:")),
             ("msg_mute_unmuted", "%u %s", _("Custom unmuted template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce headset deafen/undeafen status changes"), "speak_deafen", "custom_deafen", [
             ("msg_deafen_deafened", "%u %s", _("Custom deafened template:")),
             ("msg_deafen_undeafened", "%u %s", _("Custom undeafened template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce when members start or stop streaming"), "speak_stream_status", "custom_stream_status", [
-            ("msg_stream_started", "%u started streaming", _("Custom streaming started template:")),
+            ("msg_stream_started", "%u started streaming %t", _("Custom streaming started template:")),
             ("msg_stream_stopped", "%u stopped streaming", _("Custom streaming stopped template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce when members join or leave your stream"), "speak_stream_viewer", "custom_stream_viewer", [
             ("msg_stream_join", "%u joined your stream", _("Custom user joined stream template:")),
             ("msg_stream_leave", "%u left your stream", _("Custom user left stream template:"))
         ])
-        
+
         self.addFeatureGroup(helper, _("Announce incoming text messages in the active channel"), "speak_message", "custom_message", [
             ("msg_message", "New message from %u: %m", _("Custom incoming message template:"))
         ])
@@ -151,37 +178,37 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         cb = wx.CheckBox(self, label=group_label)
         cb.SetValue(config.conf["accessibleDiscord"][speak_key])
         helper.addItem(cb)
-        
+
         # 2. Choice control (Default/Custom) - Always visible, enabled/disabled based on speak_key
         choice_sizer = wx.BoxSizer(wx.HORIZONTAL)
         choice_label = wx.StaticText(self, label=_("Template mode:"))
         choice = wx.Choice(self, choices=[_("Default"), _("Custom")])
         is_custom = config.conf["accessibleDiscord"][custom_key]
         choice.SetSelection(1 if is_custom else 0)
-        
+
         choice_sizer.Add(choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         choice_sizer.Add(choice, 0, wx.ALIGN_CENTER_VERTICAL)
         helper.sizer.Add(choice_sizer, 0, wx.LEFT | wx.BOTTOM, 15)
-        
+
         # 3. Create text controls for each template
         text_controls = []
         for config_key, default_val, label_text in templates:
             lbl = wx.StaticText(self, label=label_text)
             txt = wx.TextCtrl(self, value=config.conf["accessibleDiscord"][config_key] or default_val)
-            
+
             helper.sizer.Add(lbl, 0, wx.LEFT | wx.BOTTOM, 10)
             helper.sizer.Add(txt, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 15)
-            
+
             text_controls.append((config_key, default_val, lbl, txt))
-            
+
         def update_visibility():
             active = cb.GetValue()
             custom_mode = (choice.GetSelection() == 1)
-            
+
             # Choice is always visible, just enabled/disabled
             choice_label.Enable(active)
             choice.Enable(active)
-            
+
             # Hide/show text controls
             show_text = active and custom_mode
             for config_key, default_val, lbl, txt in text_controls:
@@ -189,24 +216,23 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
                 txt.Show(show_text)
                 helper.sizer.Show(lbl, show_text)
                 helper.sizer.Show(txt, show_text)
-                
+
             if not custom_mode:
                 for config_key, default_val, lbl, txt in text_controls:
                     txt.SetValue(default_val)
-                    
+
             self.Layout()
-            # Update parent scrolled window scrollbars
             parent = self.GetParent()
             if parent:
                 parent.Layout()
                 if hasattr(parent, "SetupScrolling"):
                     parent.SetupScrolling()
-            
+
         cb.Bind(wx.EVT_CHECKBOX, lambda e: update_visibility())
         choice.Bind(wx.EVT_CHOICE, lambda e: update_visibility())
-        
+
         update_visibility()
-        
+
         self._feature_groups.append({
             "cb": cb,
             "speak_key": speak_key,
@@ -227,26 +253,99 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
         )
         threading.Thread(target=self._download_and_run_bd, args=(dialog,), daemon=True).start()
 
-    def _download_and_run_bd(self, dialog):
-        speech.speakText(_("Downloading BetterDiscord installer, please wait..."))
-        url = "https://github.com/BetterDiscord/Installer/releases/latest/download/BetterDiscord-Windows.exe"
-        temp_dir = tempfile.gettempdir()
-        installer_path = os.path.join(temp_dir, "BetterDiscord-Windows.exe")
+    def _update_latest_bd_asar(self, context):
+        """Fetches the latest betterdiscord.asar directly from BetterDiscord/BetterDiscord releases."""
+        appdata = os.environ.get("APPDATA")
+        if not appdata:
+            return False
+        bd_data_dir = os.path.join(appdata, "BetterDiscord", "data")
+        os.makedirs(bd_data_dir, exist_ok=True)
+        bd_asar_path = os.path.join(bd_data_dir, "betterdiscord.asar")
+
+        asar_url = "https://github.com/BetterDiscord/BetterDiscord/releases/latest/download/betterdiscord.asar"
         try:
-            import ssl
-            context = ssl._create_unverified_context()
+            api_url = "https://api.github.com/repos/BetterDiscord/BetterDiscord/releases/latest"
+            req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, context=context, timeout=8) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                for asset in data.get("assets", []):
+                    if asset.get("name") == "betterdiscord.asar":
+                        asar_url = asset.get("browser_download_url", asar_url)
+                        break
+        except Exception:
+            pass
+
+        try:
+            req = urllib.request.Request(asar_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, context=context, timeout=20) as resp:
+                asar_bytes = resp.read()
+                if asar_bytes and len(asar_bytes) > 10000:
+                    temp_asar = bd_asar_path + ".tmp"
+                    with open(temp_asar, "wb") as f:
+                        f.write(asar_bytes)
+                    os.replace(temp_asar, bd_asar_path)
+                    check_bd_injection()
+                    if server.NVDAEventRequestHandler.plugin_instance:
+                        server.NVDAEventRequestHandler.plugin_instance.deploy_bd_plugin()
+                    return True
+        except Exception:
+            logHandler.log.exception("Accessible Discord could not update betterdiscord.asar directly")
+        return False
+
+    def _download_and_run_bd(self, dialog):
+        context = ssl._create_unverified_context()
+
+        # First, update betterdiscord.asar in the background and ensure injection + plugin deployment
+        self._update_latest_bd_asar(context)
+
+        # Dynamically resolve the latest official BetterDiscord Windows installer URL via GitHub API
+        url = "https://github.com/BetterDiscord/Installer/releases/latest/download/BetterDiscord-Installer-Windows.exe"
+        version_str = ""
+        try:
+            api_url = "https://api.github.com/repos/BetterDiscord/Installer/releases/latest"
+            api_req = urllib.request.Request(
+                api_url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            with urllib.request.urlopen(api_req, context=context, timeout=8) as api_resp:
+                api_data = json.loads(api_resp.read().decode("utf-8"))
+                version_str = api_data.get("tag_name", "")
+                for asset in api_data.get("assets", []):
+                    name_lower = asset.get("name", "").lower()
+                    if name_lower.endswith(".exe") and "windows" in name_lower:
+                        url = asset.get("browser_download_url", url)
+                        break
+                    elif name_lower.endswith(".exe"):
+                        url = asset.get("browser_download_url", url)
+        except Exception:
+            pass
+
+        if version_str:
+            wx.CallAfter(
+                speech.speakText,
+                _("Downloading BetterDiscord installer {version}, please wait...").format(version=version_str)
+            )
+        else:
+            wx.CallAfter(
+                speech.speakText,
+                _("Downloading BetterDiscord installer, please wait...")
+            )
+
+        temp_dir = tempfile.gettempdir()
+        installer_path = os.path.join(temp_dir, "BetterDiscord-Installer-Windows.exe")
+        try:
             req = urllib.request.Request(
                 url,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
             )
             start_time = time.time()
             with urllib.request.urlopen(req, context=context, timeout=30) as response:
-                total_size = int(response.headers.get('Content-Length', 0))
+                total_size = int(response.headers.get("Content-Length", 0))
                 if total_size <= 0:
-                    total_size = 78 * 1024 * 1024
+                    total_size = 12 * 1024 * 1024
                 bytes_downloaded = 0
                 chunk_size = 65536
-                with open(installer_path, 'wb') as out_file:
+                with open(installer_path, "wb") as out_file:
                     while True:
                         chunk = response.read(chunk_size)
                         if not chunk:
@@ -274,41 +373,48 @@ class AccessibleDiscordSettingsPanel(settingsDialogs.SettingsPanel):
                             remaining=time_str
                         )
                         wx.CallAfter(dialog.Update, percent, msg)
-                        
+
             wx.CallAfter(dialog.Update, 100, _("Download complete!"))
             wx.CallAfter(dialog.Destroy)
             os.startfile(installer_path)
-            speech.speakText(_("BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window."))
+            wx.CallAfter(
+                speech.speakText,
+                _("BetterDiscord installer downloaded and opened successfully. Please complete the installation in the opened window.")
+            )
+
+            def reset_btn_success():
+                if hasattr(self, "install_bd_btn") and self.install_bd_btn:
+                    self.install_bd_btn.Enable()
+                    label = _("Update or Repair BetterDiscord") if self.is_bd_installed() else _("Install BetterDiscord")
+                    self.install_bd_btn.SetLabel(label)
+            wx.CallAfter(reset_btn_success)
+
         except Exception as e:
             logHandler.log.exception("Accessible Discord failed to download BetterDiscord installer")
-            wx.CallAfter(dialog.Destroy)
-            speech.speakText(_("Failed to download BetterDiscord installer. Please check your internet connection or try again."))
-        finally:
-            def reset_btn():
-                if hasattr(self, 'install_bd_btn') and self.install_bd_btn:
-                    self.install_bd_btn.Enable()
-                    self.install_bd_btn.SetLabel(_("Install BetterDiscord"))
-            wx.CallAfter(reset_btn)
             try:
                 wx.CallAfter(dialog.Destroy)
             except Exception:
                 pass
-            speech.speakText(_("Failed to download BetterDiscord: {error}").format(error=str(e)))
-            def enable_btn():
-                if hasattr(self, 'install_bd_btn') and self.install_bd_btn:
+            wx.CallAfter(
+                speech.speakText,
+                _("Failed to download BetterDiscord: {error}").format(error=str(e))
+            )
+
+            def reset_btn_error():
+                if hasattr(self, "install_bd_btn") and self.install_bd_btn:
                     self.install_bd_btn.Enable()
                     self.install_bd_btn.SetLabel(_("Download failed, retry"))
-            wx.CallAfter(enable_btn)
+            wx.CallAfter(reset_btn_error)
 
     def onSave(self):
         config.conf["accessibleDiscord"]["interrupt_speech"] = self.interrupt_speech_cb.GetValue()
         for group in self._feature_groups:
             speak_active = group["cb"].GetValue()
             config.conf["accessibleDiscord"][group["speak_key"]] = speak_active
-            
+
             custom_active = (group["choice"].GetSelection() == 1)
             config.conf["accessibleDiscord"][group["custom_key"]] = custom_active
-            
+
             for config_key, default_val, lbl, txt, txt_sizer in group["text_controls"]:
                 if custom_active:
                     config.conf["accessibleDiscord"][config_key] = txt.GetValue()

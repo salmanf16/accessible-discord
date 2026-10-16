@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import json
 import shutil
 import threading
-from http.server import HTTPServer
 import wx
 import config
 import speech
@@ -18,41 +18,53 @@ addonHandler.initTranslation()
 from . import _settings as settings
 from . import _server as server
 
+
+def files_are_identical(path1, path2):
+    try:
+        if os.path.getsize(path1) != os.path.getsize(path2):
+            return False
+        with open(path1, "rb") as f1, open(path2, "rb") as f2:
+            return f1.read() == f2.read()
+    except Exception:
+        return False
+
+
 confspec = {
     "speak_join": "boolean(default=True)",
     "custom_join": "boolean(default=False)",
     "msg_join": "string(default='')",
-    
+
     "speak_leave": "boolean(default=True)",
     "custom_leave": "boolean(default=False)",
     "msg_leave": "string(default='')",
-    
+
     "speak_mute": "boolean(default=True)",
     "custom_mute": "boolean(default=False)",
     "msg_mute_muted": "string(default='')",
     "msg_mute_unmuted": "string(default='')",
-    
+
     "speak_deafen": "boolean(default=True)",
     "custom_deafen": "boolean(default=False)",
     "msg_deafen_deafened": "string(default='')",
     "msg_deafen_undeafened": "string(default='')",
-    
+
     "speak_stream_status": "boolean(default=True)",
     "custom_stream_status": "boolean(default=False)",
     "msg_stream_started": "string(default='')",
     "msg_stream_stopped": "string(default='')",
-    
+
     "speak_stream_viewer": "boolean(default=True)",
     "custom_stream_viewer": "boolean(default=False)",
     "msg_stream_join": "string(default='')",
     "msg_stream_leave": "string(default='')",
-    
+
     "speak_message": "boolean(default=True)",
     "custom_message": "boolean(default=False)",
     "msg_message": "string(default='')",
     "interrupt_speech": "boolean(default=True)",
 }
 config.conf.spec["accessibleDiscord"] = confspec
+
 
 def format_custom_message(template, user="", channel="", content="", state="", target=""):
     if not template:
@@ -65,6 +77,7 @@ def format_custom_message(template, user="", channel="", content="", state="", t
     msg = msg.replace("%t", target)
     return msg
 
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     server_thread = None
     server_inst = None
@@ -76,7 +89,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self.start_server()
         self.deploy_bd_plugin()
         threading.Thread(target=self.monitor_and_deploy_bd, daemon=True).start()
-        
+
         # Check if BetterDiscord is active in the latest Discord installation
         bd_status = settings.check_bd_injection()
         if bd_status is False:
@@ -119,6 +132,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.server_thread.join(timeout=1.0)
             self.server_thread = None
 
+    def ensure_bd_plugin_enabled(self):
+        appdata = os.environ.get("APPDATA")
+        if not appdata:
+            return
+        bd_data_dir = os.path.join(appdata, "BetterDiscord", "data")
+        if not os.path.isdir(bd_data_dir):
+            return
+        for branch in ["stable", "ptb", "canary", "development"]:
+            branch_dir = os.path.join(bd_data_dir, branch)
+            if not os.path.isdir(branch_dir):
+                continue
+            plugins_json = os.path.join(branch_dir, "plugins.json")
+            try:
+                data = {}
+                if os.path.exists(plugins_json):
+                    with open(plugins_json, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                if data.get("AccessibleDiscord") is not True:
+                    data["AccessibleDiscord"] = True
+                    with open(plugins_json, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4)
+            except Exception:
+                pass
+
     def deploy_bd_plugin(self):
         appdata = os.environ.get("APPDATA")
         if not appdata:
@@ -126,19 +163,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         bd_plugins_dir = os.path.join(appdata, "BetterDiscord", "plugins")
         if not os.path.exists(bd_plugins_dir):
             return False
+        self.ensure_bd_plugin_enabled()
         plugin_dir = os.path.dirname(__file__)
         src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
         dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
         if os.path.exists(src_file):
-            should_copy = False
-            if not os.path.exists(dest_file):
-                should_copy = True
-            else:
-                try:
-                    if os.path.getsize(src_file) != os.path.getsize(dest_file):
-                        should_copy = True
-                except Exception:
-                    should_copy = True
+            should_copy = not os.path.exists(dest_file) or not files_are_identical(src_file, dest_file)
             if should_copy:
                 try:
                     shutil.copy2(src_file, dest_file)
@@ -156,22 +186,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         dest_file = os.path.join(bd_plugins_dir, "AccessibleDiscord.plugin.js")
         plugin_dir = os.path.dirname(__file__)
         src_file = os.path.join(plugin_dir, "AccessibleDiscord.plugin.js")
-        if os.path.exists(dest_file) and os.path.exists(src_file):
-            try:
-                if os.path.getsize(src_file) == os.path.getsize(dest_file):
-                    return
-            except Exception:
-                pass
+        if os.path.exists(dest_file) and os.path.exists(src_file) and files_are_identical(src_file, dest_file):
+            return
         for _ in range(200):
             if os.path.exists(bd_plugins_dir):
+                self.ensure_bd_plugin_enabled()
                 if os.path.exists(src_file):
                     try:
-                        should_copy = False
-                        if not os.path.exists(dest_file):
-                            should_copy = True
-                        else:
-                            if os.path.getsize(src_file) != os.path.getsize(dest_file):
-                                should_copy = True
+                        should_copy = not os.path.exists(dest_file) or not files_are_identical(src_file, dest_file)
                         if should_copy:
                             shutil.copy2(src_file, dest_file)
                             msg = _("BetterDiscord companion plugin copied automatically. Please enable it in Discord settings.")
@@ -190,6 +212,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             content = event.get("content", "")
             state = event.get("state", "")
             target = event.get("target", "")
+            default_discord_msg = event.get("defaultMessage", "")
 
             conf = config.conf["accessibleDiscord"]
             msg = ""
@@ -200,20 +223,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if conf["custom_join"] and conf["msg_join"]:
                     msg = format_custom_message(conf["msg_join"], user=user, channel=channel)
                 else:
-                    if channel:
-                        msg = "{user} joined voice channel {channel}".format(user=user, channel=channel)
-                    else:
-                        msg = "{user} joined".format(user=user)
+                    msg = default_discord_msg or (
+                        "{user} joined voice channel {channel}".format(user=user, channel=channel)
+                        if channel else "{user} joined".format(user=user)
+                    )
             elif event_type == "leave":
                 if not conf["speak_leave"]:
                     return
                 if conf["custom_leave"] and conf["msg_leave"]:
                     msg = format_custom_message(conf["msg_leave"], user=user, channel=channel)
                 else:
-                    if channel:
-                        msg = "{user} left voice channel {channel}".format(user=user, channel=channel)
-                    else:
-                        msg = "{user} left".format(user=user)
+                    msg = default_discord_msg or (
+                        "{user} left voice channel {channel}".format(user=user, channel=channel)
+                        if channel else "{user} left".format(user=user)
+                    )
             elif event_type == "mute":
                 if not conf["speak_mute"]:
                     return
@@ -223,9 +246,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if custom_template:
                         msg = format_custom_message(custom_template, user=user, state=state_str)
                     else:
-                        msg = "{user} {state}".format(user=user, state=state_str)
+                        msg = default_discord_msg or "{user} {state}".format(user=user, state=state_str)
                 else:
-                    msg = "{user} {state}".format(user=user, state=state_str)
+                    msg = default_discord_msg or "{user} {state}".format(user=user, state=state_str)
             elif event_type == "deafen":
                 if not conf["speak_deafen"]:
                     return
@@ -235,9 +258,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if custom_template:
                         msg = format_custom_message(custom_template, user=user, state=state_str)
                     else:
-                        msg = "{user} {state}".format(user=user, state=state_str)
+                        msg = default_discord_msg or "{user} {state}".format(user=user, state=state_str)
                 else:
-                    msg = "{user} {state}".format(user=user, state=state_str)
+                    msg = default_discord_msg or "{user} {state}".format(user=user, state=state_str)
             elif event_type == "stream_status":
                 if not conf["speak_stream_status"]:
                     return
@@ -245,38 +268,38 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if conf["custom_stream_status"]:
                     custom_template = conf["msg_stream_started"] if is_started else conf["msg_stream_stopped"]
                     if custom_template:
-                        msg = format_custom_message(custom_template, user=user, target=target)
+                        msg = format_custom_message(custom_template, user=user, target=target).strip()
                     else:
-                        if is_started:
-                            msg = "{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user)
-                        else:
-                            msg = "{user} stopped streaming".format(user=user)
+                        msg = default_discord_msg or (
+                            ("{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user))
+                            if is_started else "{user} stopped streaming".format(user=user)
+                        )
                 else:
-                    if is_started:
-                        msg = "{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user)
-                    else:
-                        msg = "{user} stopped streaming".format(user=user)
+                    msg = default_discord_msg or (
+                        ("{user} started streaming {target}".format(user=user, target=target) if target else "{user} started streaming".format(user=user))
+                        if is_started else "{user} stopped streaming".format(user=user)
+                    )
             elif event_type == "stream_join":
                 if not conf["speak_stream_viewer"]:
                     return
                 if conf["custom_stream_viewer"] and conf["msg_stream_join"]:
                     msg = format_custom_message(conf["msg_stream_join"], user=user)
                 else:
-                    msg = "{user} joined your stream".format(user=user)
+                    msg = default_discord_msg or "{user} joined your stream".format(user=user)
             elif event_type == "stream_leave":
                 if not conf["speak_stream_viewer"]:
                     return
                 if conf["custom_stream_viewer"] and conf["msg_stream_leave"]:
                     msg = format_custom_message(conf["msg_stream_leave"], user=user)
                 else:
-                    msg = "{user} left your stream".format(user=user)
+                    msg = default_discord_msg or "{user} left your stream".format(user=user)
             elif event_type == "message":
                 if not conf["speak_message"]:
                     return
                 if conf["custom_message"] and conf["msg_message"]:
                     msg = format_custom_message(conf["msg_message"], user=user, content=content)
                 else:
-                    msg = "New message from {user}: {content}".format(user=user, content=content)
+                    msg = default_discord_msg or "New message from {user}: {content}".format(user=user, content=content)
 
             if msg:
                 if conf.get("interrupt_speech", True):

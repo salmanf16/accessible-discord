@@ -82,7 +82,7 @@ def copy_to_installed():
         gp_dir = os.path.join(INSTALL_DIR, "globalPlugins")
         if os.path.exists(gp_dir):
             for item in os.listdir(gp_dir):
-                if item in ("_accessibleDiscord_server.py", "_accessibleDiscord_settings.py", "accessible_discord.py", "accessible_discord", "server.py", "settings.py"):
+                if item in ("_gui.py", "_accessibleDiscord_server.py", "_accessibleDiscord_settings.py", "accessible_discord.py", "accessible_discord", "server.py", "settings.py"):
                     path = os.path.join(gp_dir, item)
                     try:
                         if os.path.isdir(path):
@@ -92,6 +92,13 @@ def copy_to_installed():
                         print(f"Purged stale file/folder: {item}")
                     except Exception as e:
                         print(f"Warning: Failed to purge stale item {item}: {e}")
+        stray_root_js = os.path.join(INSTALL_DIR, "AccessibleDiscord.plugin.js")
+        if os.path.exists(stray_root_js):
+            try:
+                os.remove(stray_root_js)
+                print("Purged stray root AccessibleDiscord.plugin.js in INSTALL_DIR")
+            except Exception:
+                pass
 
     copied_count = 0
     for root, dirs, files in os.walk(SRC_DIR):
@@ -165,11 +172,18 @@ def package_addon():
 if __name__ == "__main__":
     print("--- NVDA Accessible Discord Addon Deploy & Package ---")
     
-    # Sync root plugin with globalPlugins plugin folder
+    # Sync root plugin with globalPlugins plugin folder and BetterDiscord plugins folder
     try:
         shutil.copy2(os.path.join(SRC_DIR, "AccessibleDiscord.plugin.js"),
                      os.path.join(SRC_DIR, "globalPlugins", "AccessibleDiscord.plugin.js"))
         print("Synchronized root AccessibleDiscord.plugin.js to globalPlugins folder.")
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            bd_plugins = os.path.join(appdata, "BetterDiscord", "plugins")
+            if os.path.isdir(bd_plugins):
+                shutil.copy2(os.path.join(SRC_DIR, "AccessibleDiscord.plugin.js"),
+                             os.path.join(bd_plugins, "AccessibleDiscord.plugin.js"))
+                print("Synchronized AccessibleDiscord.plugin.js to BetterDiscord plugins folder.")
     except Exception as e:
         print(f"Warning: Failed to sync plugin files: {e}")
 

@@ -90,25 +90,25 @@ msgid "Default"
 msgstr "الافتراضي"
 
 msgid "Download complete!"
-msgstr "اكتمل التنزيل!"
+msgstr "اكتمل التحميل!"
 
 msgid "Download failed, retry"
 msgstr "فشل التحميل، اضغط لإعادة المحاولة"
 
 msgid "Downloaded {downloaded} MB of {total} MB ({percent}%)\nTime remaining: {remaining}"
-msgstr "تم تنزيل {downloaded} ميغابايت من {total} ميغابايت ({percent}%)\nالوقت المتبقي: {remaining}"
+msgstr "تم تحميل {downloaded} م.ب من أصل {total} م.ب ({percent}%)\nالوقت المتبقي: {remaining}"
 
 msgid "Downloading BetterDiscord"
 msgstr "تحميل BetterDiscord"
+
+msgid "Downloading BetterDiscord installer {version}, please wait..."
+msgstr "جاري تحميل مثبت BetterDiscord الإصدار {version}، يرجى الانتظار..."
 
 msgid "Downloading BetterDiscord installer, please wait..."
 msgstr "جاري تحميل مثبت BetterDiscord المساعد، يرجى الانتظار..."
 
 msgid "Downloading..."
 msgstr "جاري التحميل..."
-
-msgid "Failed to download BetterDiscord installer. Please check your internet connection or try again."
-msgstr "فشل في تنزيل مثبت BetterDiscord. يرجى التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى."
 
 msgid "Failed to download BetterDiscord: {error}"
 msgstr "فشل تحميل BetterDiscord: {error}"
@@ -121,6 +121,9 @@ msgstr "مقاطعة الناطق عند ورود تنبيهات جديدة"
 
 msgid "Template mode:"
 msgstr "نمط القالب:"
+
+msgid "Update or Repair BetterDiscord"
+msgstr "تحديث أو إصلاح BetterDiscord"
 
 msgid "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it."
 msgstr "تنبيه: BetterDiscord غير نشط في تطبيق ديسكورد الخاص بك. يرجى فتح إعدادات Accessible Discord لتثبيته أو تحديثه."

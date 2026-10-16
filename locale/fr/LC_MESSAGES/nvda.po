@@ -90,25 +90,25 @@ msgid "Default"
 msgstr "Par défaut"
 
 msgid "Download complete!"
-msgstr "Téléchargement terminé !"
+msgstr "Téléchargement terminé !"
 
 msgid "Download failed, retry"
 msgstr "Le téléchargement a échoué, réessayez"
 
 msgid "Downloaded {downloaded} MB of {total} MB ({percent}%)\nTime remaining: {remaining}"
-msgstr "Téléchargé {téléchargé} Mo sur {total} Mo ({percent} %)\nTemps restant : {restant}"
+msgstr "Téléchargé {downloaded} Mo sur {total} Mo ({percent}%)\nTemps restant : {remaining}"
 
 msgid "Downloading BetterDiscord"
 msgstr "Téléchargement de BetterDiscord"
+
+msgid "Downloading BetterDiscord installer {version}, please wait..."
+msgstr "Téléchargement de l'installateur BetterDiscord {version}, veuillez patienter..."
 
 msgid "Downloading BetterDiscord installer, please wait..."
 msgstr "Téléchargement de l'installateur BetterDiscord, veuillez patienter..."
 
 msgid "Downloading..."
 msgstr "Téléchargement..."
-
-msgid "Failed to download BetterDiscord installer. Please check your internet connection or try again."
-msgstr "Échec du téléchargement du programme d'installation de BetterDiscord. Veuillez vérifier votre connexion Internet ou réessayer."
 
 msgid "Failed to download BetterDiscord: {error}"
 msgstr "Échec du téléchargement de BetterDiscord : {error}"
@@ -121,6 +121,9 @@ msgstr "Interrompre la parole pour les nouvelles annonces"
 
 msgid "Template mode:"
 msgstr "Mode modèle:"
+
+msgid "Update or Repair BetterDiscord"
+msgstr "Mettre à jour ou réparer BetterDiscord"
 
 msgid "Warning: BetterDiscord is not active in your Discord client. Please open Accessible Discord settings to install or update it."
 msgstr "Avertissement : BetterDiscord n'est pas actif dans votre client Discord. Veuillez ouvrir les paramètres d'Accessible Discord pour l'installer ou le mettre à jour."
